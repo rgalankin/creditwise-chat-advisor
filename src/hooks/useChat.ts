@@ -1,16 +1,20 @@
 import { useState, useCallback } from 'react';
 import { blink } from '../lib/blink';
 import { toast } from 'sonner';
+import { useCredits } from './useCredits';
+import { useLanguage } from '../lib/i18n';
 
 export function useChat(profile: any) {
   const [messages, setMessages] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [session, setSession] = useState<any>(null);
+  const { useCredit } = useCredits();
+  const { t, language } = useLanguage();
 
   const initSession = useCallback(async () => {
     if (!profile) return;
     try {
-      const sessions = await blink.db.chatSessions.list({ 
+      const sessions = await (blink.db as any).chatSessions.list({ 
         where: { userId: profile.userId },
         orderBy: { createdAt: 'desc' },
         limit: 1
@@ -19,23 +23,23 @@ export function useChat(profile: any) {
       let activeSession = sessions[0];
       
       if (!activeSession) {
-        activeSession = await blink.db.chatSessions.create({
-          id: `session_${Date.now()}`,
+        activeSession = await (blink.db as any).chatSessions.create({
           userId: profile.userId,
           title: 'Initial Consultation'
         });
         
         const greeting = {
-          id: `msg_greet_${Date.now()}`,
           sessionId: activeSession.id,
           userId: profile.userId,
           role: 'assistant',
-          content: "Hello! I'm your CreditWise Advisor. I'm here to help you navigate your financial situation with complete autonomy. \n\nBefore we begin, what country or region are you located in? My recommendations depend heavily on local financial regulations."
+          content: language === 'ru' 
+            ? "Здравствуйте! Я ваш советник Кредо-Сервис. Я здесь, чтобы помочь вам разобраться в вашей финансовой ситуации. \n\nПрежде чем мы начнем, в какой стране или регионе вы находитесь? Мои рекомендации сильно зависят от местного финансового законодательства."
+            : "Hello! I'm your Credo-Service Advisor. I'm here to help you navigate your financial situation. \n\nBefore we begin, what country or region are you located in? My recommendations depend heavily on local financial regulations."
         };
-        await blink.db.chatMessages.create(greeting);
-        setMessages([greeting]);
+        const createdMsg = await (blink.db as any).chatMessages.create(greeting);
+        setMessages([createdMsg]);
       } else {
-        const msgs = await blink.db.chatMessages.list({
+        const msgs = await (blink.db as any).chatMessages.list({
           where: { sessionId: activeSession.id },
           orderBy: { createdAt: 'asc' }
         });
@@ -45,65 +49,79 @@ export function useChat(profile: any) {
     } catch (error) {
       console.error('Session init error:', error);
     }
-  }, [profile]);
+  }, [profile, language]);
 
   const sendMessage = async (content: string) => {
     if (!content.trim() || !session || !profile) return;
 
+    // Credit check
+    const hasCredit = await useCredit();
+    if (!hasCredit) return;
+
     const userMsg = {
-      id: `msg_u_${Date.now()}`,
       sessionId: session.id,
       userId: profile.userId,
       role: 'user',
       content
     };
 
-    setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
-
     try {
-      await blink.db.chatMessages.create(userMsg);
+      const createdUserMsg = await (blink.db as any).chatMessages.create(userMsg);
+      setMessages(prev => [...prev, createdUserMsg]);
 
-      const systemPrompt = `You are the CreditWise Advisor, an intelligent, unbiased, and systematic credit/financial advisor.
-Your goal is to help users understand their financial situation (loans, debts, credit) and find potential solutions.
+      const systemPrompt = `You are the Credo-Service Advisor, a world-class, unbiased, and systematic financial intelligence agent.
+Your goal is to provide "Wow-effect" analytics and solutions for credit health, debt restructuring, and bankruptcy.
 
-CONTEXT:
-User Jurisdiction: ${profile.jurisdiction || 'Unknown'}
-User Consent: ${Number(profile.hasConsent) > 0 ? 'Granted' : 'Not Granted'}
-Financial Profile: ${profile.financialData || 'No data yet'}
+USER CONTEXT:
+Jurisdiction: ${profile.jurisdiction || 'Unknown'}
+Language: ${language}
+Consent: ${Number(profile.hasConsent) > 0 ? 'Granted' : 'Not Granted'}
+Profile: ${profile.financialData || 'No data yet'}
 
 PRINCIPLES:
-1. UNBIASED: You don't sell bank services. You give neutral advice.
-2. JURISDICTION AWARE: If jurisdiction is unknown, your first priority is to clarify it.
-3. CLEAR: Explain complex financial terms simply.
-4. SOLUTION ORIENTED: Find ways out of debt (restructuring, bankruptcy, refinancing).
-5. DATA PRIVACY: Acknowledge that data is processed only with consent.
+1. BE AN ADVOCATE: You work for the user, not the banks. Find the most favorable paths.
+2. JURISDICTION EXPERT: Always provide advice strictly within the context of the user's laws.
+3. DATA-DRIVEN: Use the user's documents and data for pinpoint accuracy.
+4. HONEST & SYSTEMIC: If a situation is difficult, be honest but provide a step-by-step recovery plan.
+5. NO BROKERS: You are an independent AI, not a broker trying to sell a service.
 
-If the user mentions their country (e.g., "I'm in the USA", "I am from Germany"), acknowledge it and say "Jurisdiction Updated". This helps the system track state.`;
+Respond in ${language === 'ru' ? 'Russian' : 'English'}. 
+If jurisdiction is unknown, emphasize that your precision depends on knowing the country.`;
 
-      const { text } = await blink.ai.generateText({
+      let fullResponse = '';
+      const botMsgId = `msg_a_${Date.now()}`;
+      
+      // Temporary message for streaming
+      const tempBotMsg = {
+        id: botMsgId,
+        role: 'assistant',
+        content: '',
+        isStreaming: true
+      };
+      setMessages(prev => [...prev, tempBotMsg]);
+
+      await blink.ai.streamText({
         messages: [
           { role: 'system', content: systemPrompt },
           ...messages.map(m => ({ role: m.role, content: m.content })),
           { role: 'user', content }
         ]
+      }, (chunk) => {
+        fullResponse += chunk;
+        setMessages(prev => prev.map(m => 
+          m.id === botMsgId ? { ...m, content: fullResponse } : m
+        ));
       });
 
-      const botMsg = {
-        id: `msg_a_${Date.now()}`,
+      const finalBotMsg = await (blink.db as any).chatMessages.create({
         sessionId: session.id,
         userId: profile.userId,
         role: 'assistant',
-        content: text
-      };
+        content: fullResponse
+      });
 
-      await blink.db.chatMessages.create(botMsg);
-      setMessages(prev => [...prev, botMsg]);
-
-      // Detect jurisdiction change in AI response or user message
-      if (text.toLowerCase().includes('jurisdiction updated') || content.toLowerCase().match(/(i'm in|i am from|i am in|location is) ([a-zA-Z\s]+)/)) {
-         // Potential for automated update here, but we'll stick to explicit profile updates for safety in MVP
-      }
+      setMessages(prev => prev.map(m => m.id === botMsgId ? finalBotMsg : m));
 
     } catch (error) {
       console.error('Chat error:', error);
@@ -116,7 +134,7 @@ If the user mentions their country (e.g., "I'm in the USA", "I am from Germany")
   const uploadDocument = async (file: File) => {
     if (!session || !profile) return;
 
-    toast.info(`Analyzing ${file.name}...`);
+    toast.info(language === 'ru' ? `Анализ ${file.name}...` : `Analyzing ${file.name}...`);
     try {
       const { publicUrl } = await blink.storage.upload(
         file,
@@ -140,28 +158,30 @@ If the user mentions their country (e.g., "I'm in the USA", "I am from Germany")
         ]
       });
 
-      await blink.db.userDocuments.create({
-        id: `doc_${Date.now()}`,
+      await (blink.db as any).userDocuments.create({
         userId: profile.userId,
         name: file.name,
         url: publicUrl,
         extractedData: text
       });
 
-      const botMsg = {
-        id: `msg_sys_${Date.now()}`,
+      const botMsgContent = language === 'ru'
+        ? `Я проанализировал ваш документ: **${file.name}**. \n\nНа основе извлеченных данных я теперь могу дать более конкретные советы. Хотите просмотреть результаты или продолжить задавать вопросы?`
+        : `I've successfully analyzed your document: **${file.name}**. \n\nBased on the data extracted, I can now give more specific advice. Would you like to review the findings or continue with your questions?`;
+
+      const botMsg = await (blink.db as any).chatMessages.create({
         sessionId: session.id,
         userId: profile.userId,
         role: 'assistant',
-        content: `I've successfully analyzed your document: **${file.name}**. \n\nBased on the data extracted, I can now give more specific advice. Would you like to review the findings or continue with your questions?`
-      };
-      await blink.db.chatMessages.create(botMsg);
+        content: botMsgContent
+      });
+
       setMessages(prev => [...prev, botMsg]);
-      toast.success('Document analyzed.');
+      toast.success(language === 'ru' ? 'Документ проанализирован.' : 'Document analyzed.');
 
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error('Failed to process document.');
+      toast.error(language === 'ru' ? 'Ошибка обработки документа.' : 'Failed to process document.');
     }
   };
 

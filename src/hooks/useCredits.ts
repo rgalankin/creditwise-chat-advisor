@@ -20,8 +20,8 @@ export const useCredits = () => {
       });
 
       if (records.length === 0) {
-        // Initialize with 100 free credits
-        const newRecord = await (blink.db as any).userCredits.create({
+        // Initialize with 100 free credits using upsert (user_id is PK, no separate id column)
+        const newRecord = await (blink.db as any).userCredits.upsert({
           userId: user.id,
           credits: 100
         });
@@ -50,7 +50,9 @@ export const useCredits = () => {
 
     try {
       const newCredits = credits - 1;
-      await (blink.db as any).userCredits.update(user.id, {
+      // user_id is the PK, use upsert to update by userId
+      await (blink.db as any).userCredits.upsert({
+        userId: user.id,
         credits: newCredits
       });
       setCredits(newCredits);
@@ -66,7 +68,9 @@ export const useCredits = () => {
 
     try {
       const newCredits = credits + amount;
-      await (blink.db as any).userCredits.update(user.id, {
+      // user_id is the PK, use upsert to update by userId
+      await (blink.db as any).userCredits.upsert({
+        userId: user.id,
         credits: newCredits
       });
       setCredits(newCredits);

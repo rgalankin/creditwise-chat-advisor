@@ -15,15 +15,15 @@ export const useCredits = () => {
     }
 
     try {
-      // Fetch credits record by user_id (the table uses user_id as PK)
+      // Fetch credits record by user_id
       const records = await (blink.db as any).userCredits.list({
         where: { userId: user.id },
         limit: 1
       });
 
       if (!records || records.length === 0) {
-        // Initialize with 100 free credits - use upsert since user_id is the PK (no id column)
-        await (blink.db as any).userCredits.upsert({
+        // Initialize with 100 free credits
+        await (blink.db as any).userCredits.create({
           userId: user.id,
           credits: 100
         });
@@ -52,11 +52,16 @@ export const useCredits = () => {
 
     try {
       const newCredits = credits - 1;
-      // Use upsert with userId as the key
-      await (blink.db as any).userCredits.upsert({
-        userId: user.id,
-        credits: newCredits
+      // Find the record and update it
+      const records = await (blink.db as any).userCredits.list({
+        where: { userId: user.id },
+        limit: 1
       });
+      if (records && records.length > 0) {
+        await (blink.db as any).userCredits.update(records[0].id, {
+          credits: newCredits
+        });
+      }
       setCredits(newCredits);
       return true;
     } catch (error) {
@@ -70,11 +75,16 @@ export const useCredits = () => {
 
     try {
       const newCredits = credits + amount;
-      // Use upsert with userId as the key
-      await (blink.db as any).userCredits.upsert({
-        userId: user.id,
-        credits: newCredits
+      // Find the record and update it
+      const records = await (blink.db as any).userCredits.list({
+        where: { userId: user.id },
+        limit: 1
       });
+      if (records && records.length > 0) {
+        await (blink.db as any).userCredits.update(records[0].id, {
+          credits: newCredits
+        });
+      }
       setCredits(newCredits);
       toast.success(`Successfully added ${amount} credits!`);
     } catch (error) {

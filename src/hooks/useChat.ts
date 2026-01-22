@@ -1,8 +1,9 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { blink } from '../lib/blink';
 import { toast } from 'sonner';
 import { useCredits } from './useCredits';
 import { useLanguage } from '../lib/i18n';
+import { chatApi, isN8nMode, initChatMode, ChatResponse } from '../lib/chatApi';
 
 export type ChatState = 
   | 'INTRO' 
@@ -26,8 +27,23 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
   const [session, setSession] = useState<any>(null);
   const [chatState, setChatState] = useState<ChatState>('INTRO');
   const [diagnosticData, setDiagnosticData] = useState<any>({});
+  const [apiMode, setApiMode] = useState<'local' | 'n8n' | 'checking'>('checking');
+  const modeCheckedRef = useRef(false);
   const { useCredit } = useCredits();
   const { t, language } = useLanguage();
+
+  // Проверить режим работы (n8n или локальный) при монтировании
+  useEffect(() => {
+    if (modeCheckedRef.current) return;
+    modeCheckedRef.current = true;
+    
+    initChatMode().then(() => {
+      setApiMode(isN8nMode ? 'n8n' : 'local');
+      console.log(`[useChat] Mode initialized: ${isN8nMode ? 'n8n' : 'local'}`);
+    }).catch(() => {
+      setApiMode('local');
+    });
+  }, []);
 
   const getInitialMessage = useCallback((state: ChatState) => {
     if (language === 'ru') {
@@ -150,15 +166,123 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
     }
   };
 
-  const sendMessage = async (content: string) => {
-    if (!content.trim() || !session || !profile) return;
+  /**
+   * Обработать ответ от n8n API
+   * Сохраняет сообщение в БД и обновляет состояние
+   */
+  const handleN8nResponse = async (response: ChatResponse) => {
+    if (!session || !profile) return;
+    
+    // Обновить состояние FSM
+    if (response.state) {
+      setChatState(response.state as ChatState);
+    }
+    
+    // Обновить данные диагностики если есть
+    if (response.meta?.diagnosticData) {
+      setDiagnosticData(response.meta.diagnosticData);
+    }
+    
+    // Обновить профиль если есть данные
+    if (response.meta?.profileData) {
+      await updateProfile(response.meta.profileData);
+    }
+    
+    // Сохранить сообщение в БД
+    const meta = {
+      state: response.state,
+      diagnosticData: response.meta?.diagnosticData || diagnosticData,
+      ui: response.ui,
+      fromN8n: true
+    };
+    
+    const botMsg = await (blink.db as any).chatMessages.create({
+      sessionId: session.id,
+      userId: profile.userId,
+      role: 'assistant',
+      content: response.text,
+      metadata: JSON.stringify(meta)
+    });
+    
+    setMessages(prev => [...prev, botMsg]);
+  };
 
-    // Demo Guardrails: PII Check
-    const piiRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)|(\+?\d{10,15})|(\d{4}\s\d{6})|(\d{10})/g;
-    if (piiRegex.test(content)) {
-      toast.warning(language === 'ru' ? "В демо-версии не вводите персональные данные." : "In demo mode, do not enter personal data.");
+  /**
+   * Отправить сообщение через n8n API
+   */
+  const sendMessageViaN8n = async (content: string) => {
+    if (!session || !profile) return;
+    
+    setIsLoading(true);
+    try {
+      const response = await chatApi.sendMessage({
+        sessionId: session.id,
+        content,
+        language: language as 'ru' | 'en'
+      });
+      
+      // Если fallback mode - использовать локальную логику
+      if (response.meta?.event?.type === 'fallback_mode') {
+        console.log('[useChat] Fallback to local mode');
+        setApiMode('local');
+        await sendMessageLocal(content);
+        return;
+      }
+      
+      await handleN8nResponse(response);
+    } catch (error) {
+      console.error('[useChat] n8n error:', error);
+      toast.error(language === 'ru' ? 'Ошибка соединения. Попробуйте ещё раз.' : 'Connection error. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Отправить действие через n8n API (для кнопок)
+   */
+  const sendAction = async (action: string, payload?: Record<string, any>) => {
+    if (!session || !profile) return;
+    
+    // В локальном режиме - обработать локально
+    if (apiMode === 'local') {
+      // Конвертировать action в sendMessage
+      const actionContent = payload?.answer || payload?.jurisdiction || action;
+      await sendMessage(actionContent);
       return;
     }
+    
+    setIsLoading(true);
+    try {
+      const response = await chatApi.sendAction({
+        sessionId: session.id,
+        action: action as any,
+        language: language as 'ru' | 'en',
+        payload
+      });
+      
+      if (response.meta?.event?.type === 'fallback_mode') {
+        setApiMode('local');
+        const actionContent = payload?.answer || payload?.jurisdiction || action;
+        await sendMessageLocal(actionContent);
+        return;
+      }
+      
+      await handleN8nResponse(response);
+    } catch (error) {
+      console.error('[useChat] Action error:', error);
+      toast.error(language === 'ru' ? 'Ошибка. Попробуйте ещё раз.' : 'Error. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Локальная обработка сообщения (fallback режим)
+   * Примечание: сообщение пользователя уже сохранено в sendMessage()
+   */
+  const sendMessageLocal = async (content: string) => {
+    if (!content.trim() || !session || !profile) return;
 
     // Prohibited keywords
     const prohibitedKeywords = ['гарантируй', 'подделать', 'обойти закон', 'guarantee', 'forge', 'bypass law'];
@@ -172,17 +296,9 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
           : "I cannot assist with such actions. I can suggest legal and safe options.",
         metadata: JSON.stringify({ state: chatState, diagnosticData })
       });
-      setMessages(prev => [...prev, { role: 'user', content }, botMsg]);
+      setMessages(prev => [...prev, botMsg]);
       return;
     }
-
-    const userMsg = await (blink.db as any).chatMessages.create({
-      sessionId: session.id,
-      userId: profile.userId,
-      role: 'user',
-      content
-    });
-    setMessages(prev => [...prev, userMsg]);
 
     // FSM Logic
     if (chatState === 'INTRO') {
@@ -278,6 +394,37 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
     }
   };
 
+  /**
+   * Главная функция отправки сообщения
+   * Выбирает между n8n API и локальной логикой
+   */
+  const sendMessage = async (content: string) => {
+    if (!content.trim() || !session || !profile) return;
+    
+    // Demo Guardrails: PII Check (перед сохранением)
+    const piiRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)|(\+?\d{10,15})|(\d{4}\s\d{6})|(\d{10})/g;
+    if (piiRegex.test(content)) {
+      toast.warning(language === 'ru' ? "В демо-версии не вводите персональные данные." : "In demo mode, do not enter personal data.");
+      return;
+    }
+    
+    // Сохранить сообщение пользователя
+    const userMsg = await (blink.db as any).chatMessages.create({
+      sessionId: session.id,
+      userId: profile.userId,
+      role: 'user',
+      content
+    });
+    setMessages(prev => [...prev, userMsg]);
+    
+    // Выбрать режим обработки
+    if (apiMode === 'n8n') {
+      await sendMessageViaN8n(content);
+    } else {
+      await sendMessageLocal(content);
+    }
+  };
+
   const uploadDocument = async (file: File) => {
     // ... same as before but update state/metadata if needed
     if (!session || !profile) return;
@@ -305,6 +452,16 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
     }
   };
 
-  return { messages, isLoading, sendMessage, uploadDocument, initSession, chatState, diagnosticData, getDiagnosticQuestion };
+  return { 
+    messages, 
+    isLoading, 
+    sendMessage,
+    sendAction, // Новый метод для кнопок (n8n actions)
+    uploadDocument, 
+    initSession, 
+    chatState, 
+    diagnosticData, 
+    getDiagnosticQuestion,
+    apiMode // Режим работы (local/n8n/checking)
+  };
 }
-

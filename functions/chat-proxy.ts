@@ -213,6 +213,7 @@ async function handler(req: Request): Promise<Response> {
       }
 
       case "message": {
+        console.log(`[chat-proxy] MESSAGE ENDPOINT START - data:`, data);
         console.log(`[chat-proxy] Processing message endpoint with sessionId: ${data.sessionId}`);
 
         // Double-check environment variables for message endpoint

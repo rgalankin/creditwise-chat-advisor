@@ -84,17 +84,29 @@ async function handler(req: Request): Promise<Response> {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
 
-  // Only POST
-  if (req.method !== "POST") {
+  // Only POST and GET
+  if (req.method !== "POST" && req.method !== "GET") {
     return errorResponse("Method not allowed", "METHOD_NOT_ALLOWED", 405);
   }
 
   try {
-    // Parse body
-    const body = await req.json();
-    const { endpoint, ...data } = body;
+    // Parse body safely
+    let body = {};
+    if (req.method === "POST") {
+      try {
+        body = await req.json();
+      } catch {
+        body = {};
+      }
+    }
+    
+    const { endpoint, ...data } = body as any;
 
-    if (!endpoint) {
+    // Support endpoint in query for GET or missing body
+    const url = new URL(req.url);
+    const targetEndpoint = endpoint || url.searchParams.get("endpoint");
+
+    if (!targetEndpoint && req.method === "POST") {
       return errorResponse("Missing endpoint", "MISSING_ENDPOINT");
     }
 
@@ -109,18 +121,21 @@ async function handler(req: Request): Promise<Response> {
 
     const blink = createClient({ projectId, secretKey });
 
-    // Verify auth
-    const authHeader = req.headers.get("Authorization");
-    
-    // Allow health check without auth
-    if (endpoint === "health") {
+    // Allow health check without auth or with optional auth
+    if (targetEndpoint === "health") {
       const n8nUrl = Deno.env.get("N8N_WEBHOOK_URL");
       return jsonResponse({
         status: "ok",
         mode: n8nUrl ? "n8n" : "fallback",
         timestamp: new Date().toISOString(),
-        authRequired: true,
+        authRequired: false,
       });
+    }
+
+    // Verify auth for all other endpoints
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return errorResponse("Authorization header missing", "UNAUTHORIZED", 401);
     }
     
     const auth = await blink.auth.verifyToken(authHeader);
@@ -144,7 +159,7 @@ async function handler(req: Request): Promise<Response> {
     // ==========================================================================
 
     if (!n8nUrl) {
-      console.log(`[chat-proxy] Fallback mode for endpoint: ${endpoint}`);
+      console.log(`[chat-proxy] Fallback mode for endpoint: ${targetEndpoint}`);
       
       // В fallback режиме возвращаем базовый ответ
       // Вся логика остаётся на фронте (в useChat)
@@ -169,7 +184,7 @@ async function handler(req: Request): Promise<Response> {
     };
 
     // Route to n8n
-    switch (endpoint) {
+    switch (targetEndpoint) {
       case "start": {
         // Начать новую сессию
         const result = await callN8n(n8nConfig, "start", {
@@ -261,7 +276,7 @@ async function handler(req: Request): Promise<Response> {
       }
 
       default:
-        return errorResponse(`Unknown endpoint: ${endpoint}`, "UNKNOWN_ENDPOINT");
+        return errorResponse(`Unknown endpoint: ${targetEndpoint}`, "UNKNOWN_ENDPOINT");
     }
 
   } catch (error) {

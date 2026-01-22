@@ -91,9 +91,14 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
     }
 
     // Authenticated user - get sessions from database
+    if (!profile?.userId) {
+      console.warn('[useChat] Profile userId is missing, cannot init session for authenticated user');
+      return;
+    }
+
     try {
       const sessions = await (blink.db as any).chatSessions.list({ 
-        where: { userId: profile?.userId },
+        where: { userId: profile.userId },
         orderBy: { createdAt: 'desc' },
         limit: 1
       });
@@ -242,8 +247,8 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
    * Отправить сообщение через n8n API
    */
   const sendMessageViaN8n = async (content: string) => {
-    if (!session || !profile) return;
-    
+    if (!session) return;
+
     setIsLoading(true);
     try {
       const response = await chatApi.sendMessage({
@@ -251,7 +256,7 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
         content,
         language: language as 'ru' | 'en'
       });
-      
+
       // Если fallback mode - использовать локальную логику
       if (response.meta?.event?.type === 'fallback_mode') {
         console.log('[useChat] Fallback to local mode');
@@ -259,7 +264,7 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
         await sendMessageLocal(content);
         return;
       }
-      
+
       await handleN8nResponse(response);
     } catch (error) {
       console.error('[useChat] n8n error:', error);

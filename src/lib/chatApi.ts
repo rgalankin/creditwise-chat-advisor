@@ -184,9 +184,11 @@ class ChatApiClient {
    * Получить состояние сессии (для восстановления)
    */
   async getSession(sessionId: string): Promise<ChatResponse | null> {
+    if (!sessionId) return null;
     try {
       return await this.invoke<ChatResponse>('session', { sessionId });
-    } catch {
+    } catch (error) {
+      console.warn('[ChatApi] Failed to get session:', error);
       return null;
     }
   }
@@ -212,6 +214,11 @@ class ChatApiClient {
         console.log(`[ChatApi] Response:`, response);
       }
 
+      // Проверка на наличие ответа
+      if (!response) {
+        throw new ChatApiError('Empty response from server', 'EMPTY_RESPONSE');
+      }
+
       // Проверка на ошибку
       if (response.error) {
         throw new ChatApiError(
@@ -222,13 +229,14 @@ class ChatApiClient {
       }
 
       return response as T;
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof ChatApiError) {
         throw error;
       }
       
-      // Обработка сетевых ошибок
-      const message = error instanceof Error ? error.message : 'Network error';
+      // Обработка сетевых или Blink SDK ошибок
+      const message = error?.message || 'Network error';
+      console.error(`[ChatApi] Invoke error (${endpoint}):`, error);
       throw new ChatApiError(message, 'NETWORK_ERROR');
     }
   }
@@ -262,11 +270,13 @@ export const chatApi = new ChatApiClient();
  */
 export async function checkN8nAvailability(): Promise<boolean> {
   try {
+    // Временно пробуем через blink.functions.invoke напрямую для большей стабильности
     const response = await blink.functions.invoke('chat-proxy', {
       body: { endpoint: 'health' }
     });
     return response?.status === 'ok';
-  } catch {
+  } catch (error) {
+    console.warn('[ChatApi] n8n health check failed, using local mode:', error);
     return false;
   }
 }

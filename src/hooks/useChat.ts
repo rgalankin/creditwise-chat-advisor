@@ -74,9 +74,10 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
   }, [language]);
 
   const initSession = useCallback(async () => {
-    if (!profile && !isGuestMode) return;
-    
-    if (isGuestMode) {
+    // Check if user is not authenticated (guest mode)
+    const isGuest = !profile || profile.displayName === 'Guest';
+
+    if (isGuest) {
       const guestSession = sessionStorage.getItem(GUEST_SESSION_KEY);
       if (guestSession) {
         const data = JSON.parse(guestSession);
@@ -102,6 +103,7 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
       return;
     }
 
+    // Authenticated user - get sessions from database
     try {
       const sessions = await (blink.db as any).chatSessions.list({ 
         where: { userId: profile?.userId },
@@ -146,7 +148,7 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
     } catch (error) {
       console.error('Session init error:', error);
     }
-  }, [profile, language, getInitialMessage, isGuestMode]);
+  }, [profile, language, getInitialMessage]);
 
   const getDiagnosticQuestion = (step: number) => {
     if (language === 'ru') {
@@ -175,14 +177,15 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
   };
 
   const moveToState = async (nextState: ChatState, assistantResponse: string, updatedDiagData?: any) => {
-    if ((!session || !profile) && !isGuestMode) return;
-    
+    const isGuest = !profile || profile.displayName === 'Guest';
+    if ((!session || !profile) && !isGuest) return;
+
     setIsLoading(true);
     try {
       const meta = { state: nextState, diagnosticData: updatedDiagData || diagnosticData };
       const content = assistantResponse;
-      
-      if (isGuestMode) {
+
+      if (isGuest) {
         const botMsg = {
           id: `msg_guest_${Date.now()}`,
           role: 'assistant',
@@ -453,7 +456,8 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
    * Выбирает между n8n API и локальной логикой
    */
   const sendMessage = async (content: string) => {
-    if ((!content.trim() || !session || !profile) && !isGuestMode) return;
+    const isGuest = !profile || profile.displayName === 'Guest';
+    if ((!content.trim() || !session || !profile) && !isGuest) return;
     
     // Demo Guardrails: PII Check (перед сохранением)
     const piiRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)|(\+?\d{10,15})|(\d{4}\s\d{6})|(\d{10})/g;
@@ -461,8 +465,8 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
       toast.warning(language === 'ru' ? "В демо-версии не вводите персональные данные." : "In demo mode, do not enter personal data.");
       return;
     }
-    
-    if (isGuestMode) {
+
+    if (isGuest) {
       const userMsg = {
         id: `msg_guest_u_${Date.now()}`,
         role: 'user',

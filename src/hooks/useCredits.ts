@@ -22,8 +22,8 @@ export const useCredits = () => {
       });
 
       if (!records || records.length === 0) {
-        // Initialize with 100 free credits - create new record
-        await (blink.db as any).userCredits.create({
+        // Initialize with 100 free credits - use upsert since user_id is the PK (no id column)
+        await (blink.db as any).userCredits.upsert({
           userId: user.id,
           credits: 100
         });

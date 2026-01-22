@@ -156,7 +156,12 @@ async function handler(req: Request): Promise<Response> {
     const n8nUrl = Deno.env.get("N8N_WEBHOOK_URL");
     const n8nSecret = Deno.env.get("N8N_WEBHOOK_SECRET");
 
-    console.log(`[chat-proxy] Environment check: n8nUrl=${n8nUrl ? 'SET' : 'NOT_SET'}, n8nSecret=${n8nSecret ? 'SET' : 'NOT_SET'}`);
+    console.log(`[chat-proxy] Environment check for endpoint ${targetEndpoint}: n8nUrl=${n8nUrl ? 'SET (' + n8nUrl + ')' : 'NOT_SET'}, n8nSecret=${n8nSecret ? 'SET' : 'NOT_SET'}`);
+    console.log(`[chat-proxy] All env vars:`, {
+      N8N_WEBHOOK_URL: Deno.env.get("N8N_WEBHOOK_URL"),
+      N8N_WEBHOOK_SECRET: Deno.env.get("N8N_WEBHOOK_SECRET") ? '***' : null,
+      BLINK_PROJECT_ID: Deno.env.get("BLINK_PROJECT_ID"),
+    });
 
     // ==========================================================================
     // FALLBACK MODE (без n8n - для демо)

@@ -245,6 +245,7 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
 
   /**
    * Отправить сообщение через n8n API
+   * При ошибке n8n - автоматически переключаемся на локальную логику
    */
   const sendMessageViaN8n = async (content: string) => {
     if (!session) return;
@@ -258,7 +259,7 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
       });
 
       // Если fallback mode - использовать локальную логику
-      if (response.meta?.event?.type === 'fallback_mode') {
+      if (response.fallback || response.meta?.event?.type === 'fallback_mode') {
         console.log('[useChat] Fallback to local mode');
         setApiMode('local');
         await sendMessageLocal(content);
@@ -267,8 +268,10 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
 
       await handleN8nResponse(response);
     } catch (error) {
-      console.error('[useChat] n8n error:', error);
-      toast.error('Ошибка соединения. Попробуйте ещё раз.');
+      console.error('[useChat] n8n error, falling back to local mode:', error);
+      // При ошибке n8n - переключаемся на локальную логику вместо показа ошибки
+      setApiMode('local');
+      await sendMessageLocal(content);
     } finally {
       setIsLoading(false);
     }
@@ -276,6 +279,7 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
 
   /**
    * Отправить сообщение через n8n API (для гостей)
+   * При ошибке n8n - автоматически переключаемся на локальную логику
    */
   const sendMessageViaN8nGuest = async (content: string) => {
     setIsLoading(true);
@@ -285,6 +289,14 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
         content,
         language: language as 'ru' | 'en'
       });
+
+      // Если fallback mode - использовать локальную логику
+      if (response.fallback || response.meta?.event?.type === 'fallback_mode') {
+        console.log('[useChat] Guest: Fallback to local mode');
+        setApiMode('local');
+        await processGuestMessageLocally(content);
+        return;
+      }
 
       // Обработать ответ для гостей (сохранить в sessionStorage)
       if (response.state) {
@@ -323,15 +335,103 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
       }));
 
     } catch (error) {
-      console.error('[useChat] Guest n8n error:', error);
-      toast.error('Ошибка соединения. Попробуйте ещё раз.');
+      console.error('[useChat] Guest n8n error, falling back to local mode:', error);
+      // При ошибке n8n - переключаемся на локальную логику вместо показа ошибки
+      setApiMode('local');
+      await processGuestMessageLocally(content);
     } finally {
       setIsLoading(false);
     }
   };
 
   /**
+   * Локальная обработка сообщения для гостей (fallback режим)
+   */
+  const processGuestMessageLocally = async (content: string) => {
+    // Prohibited keywords check
+    const prohibitedKeywords = ['гарантируй', 'подделать', 'обойти закон', 'guarantee', 'forge', 'bypass law'];
+    if (prohibitedKeywords.some(k => content.toLowerCase().includes(k))) {
+      const botMsg = {
+        id: `msg_guest_${Date.now()}`,
+        role: 'assistant',
+        content: "Я не могу помогать с такими действиями. Могу предложить легальные и безопасные варианты.",
+        metadata: JSON.stringify({ state: chatState, diagnosticData }),
+        createdAt: new Date().toISOString()
+      };
+      const updatedMessages = [...messages, botMsg];
+      setMessages(updatedMessages);
+      
+      const guestData = JSON.parse(sessionStorage.getItem(GUEST_SESSION_KEY) || '{}');
+      sessionStorage.setItem(GUEST_SESSION_KEY, JSON.stringify({
+        ...guestData,
+        messages: updatedMessages
+      }));
+      return;
+    }
+
+    // FSM Logic for guests
+    let nextState: ChatState = chatState;
+    let responseText = '';
+    let updatedDiagData = diagnosticData;
+
+    if (chatState === 'INTRO') {
+      nextState = 'CONSENT';
+      responseText = getInitialMessage('CONSENT');
+    } else if (chatState === 'CONSENT') {
+      if (content.toLowerCase().includes('согласен') || content.toLowerCase().includes('да') || content.toLowerCase().includes('agree') || content.toLowerCase().includes('yes')) {
+        nextState = 'JURISDICTION';
+        responseText = getInitialMessage('JURISDICTION');
+      } else {
+        nextState = 'INTRO';
+        responseText = "Для продолжения необходимо ваше согласие.";
+      }
+    } else if (chatState === 'JURISDICTION') {
+      const qObj = getDiagnosticQuestion(1);
+      nextState = 'DIAGNOSTIC_1';
+      responseText = qObj.q;
+    } else if (chatState.startsWith('DIAGNOSTIC_')) {
+      const currentStep = parseInt(chatState.split('_')[1]);
+      const nextStep = currentStep + 1;
+      updatedDiagData = { ...diagnosticData, [`step_${currentStep}`]: content };
+      
+      if (nextStep <= 7) {
+        const qObj = getDiagnosticQuestion(nextStep);
+        nextState = `DIAGNOSTIC_${nextStep}` as ChatState;
+        responseText = qObj.q;
+      } else {
+        nextState = 'SUMMARY';
+        responseText = `Диагностика завершена! Вот краткий анализ вашей ситуации:\n\n**Ваши ответы:**\n${Object.entries(updatedDiagData).map(([k, v]) => `• ${k}: ${v}`).join('\n')}\n\n**Рекомендации:**\n1. Рассмотрите варианты рефинансирования\n2. Проверьте свою кредитную историю\n3. Составьте план погашения долгов\n\nДля более детального анализа зарегистрируйтесь в системе.`;
+      }
+    } else {
+      // Free chat - simple response for guests
+      responseText = "Для получения персонализированных рекомендаций, пожалуйста, завершите диагностику или зарегистрируйтесь в системе.";
+    }
+
+    const botMsg = {
+      id: `msg_guest_${Date.now()}`,
+      role: 'assistant',
+      content: responseText,
+      metadata: JSON.stringify({ state: nextState, diagnosticData: updatedDiagData }),
+      createdAt: new Date().toISOString()
+    };
+
+    const updatedMessages = [...messages, botMsg];
+    setMessages(updatedMessages);
+    setChatState(nextState);
+    setDiagnosticData(updatedDiagData);
+
+    const guestData = JSON.parse(sessionStorage.getItem(GUEST_SESSION_KEY) || '{}');
+    sessionStorage.setItem(GUEST_SESSION_KEY, JSON.stringify({
+      ...guestData,
+      messages: updatedMessages,
+      chatState: nextState,
+      diagnosticData: updatedDiagData
+    }));
+  };
+
+  /**
    * Отправить действие через n8n API (для кнопок)
+   * При ошибке n8n - автоматически переключаемся на локальную логику
    */
   const sendAction = async (action: string, payload?: Record<string, any>) => {
     if (!session || !profile) return;
@@ -353,7 +453,7 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
         payload
       });
       
-      if (response.meta?.event?.type === 'fallback_mode') {
+      if (response.fallback || response.meta?.event?.type === 'fallback_mode') {
         setApiMode('local');
         const actionContent = payload?.answer || payload?.jurisdiction || action;
         await sendMessageLocal(actionContent);
@@ -362,8 +462,11 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
       
       await handleN8nResponse(response);
     } catch (error) {
-      console.error('[useChat] Action error:', error);
-      toast.error('Ошибка. Попробуйте ещё раз.');
+      console.error('[useChat] Action error, falling back to local mode:', error);
+      // При ошибке n8n - переключаемся на локальную логику вместо показа ошибки
+      setApiMode('local');
+      const actionContent = payload?.answer || payload?.jurisdiction || action;
+      await sendMessageLocal(actionContent);
     } finally {
       setIsLoading(false);
     }

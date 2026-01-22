@@ -126,6 +126,8 @@ export interface ChatResponse {
   };
   /** Флаг стриминга (для будущего) */
   streaming?: boolean;
+  /** Флаг fallback режима (n8n недоступен) */
+  fallback?: boolean;
 }
 
 /** Ответ при ошибке */

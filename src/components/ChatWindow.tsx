@@ -11,10 +11,12 @@ import { Progress } from './ui/progress';
 interface ChatWindowProps {
   profile: any;
   updateProfile: (data: any) => Promise<any>;
+  isGuestMode?: boolean;
+  onLogin?: () => void;
 }
 
-export function ChatWindow({ profile, updateProfile }: ChatWindowProps) {
-  const { messages, isLoading, sendMessage, uploadDocument, initSession, chatState, getDiagnosticQuestion } = useChat(profile, updateProfile);
+export function ChatWindow({ profile, updateProfile, isGuestMode = false, onLogin }: ChatWindowProps) {
+  const { messages, isLoading, sendMessage, uploadDocument, initSession, chatState, getDiagnosticQuestion } = useChat(profile, updateProfile, isGuestMode);
   const [localInput, setLocalInput] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -35,6 +37,19 @@ export function ChatWindow({ profile, updateProfile }: ChatWindowProps) {
   const handleSend = (content?: string) => {
     const textToSend = content || localInput;
     if (!textToSend.trim()) return;
+    
+    // Requirements: certain actions require login in guest mode
+    if (isGuestMode) {
+      const lowerText = textToSend.toLowerCase();
+      const loginRequiredActions = ['согласен', 'предоставить согласие', 'agree', 'provide consent'];
+      
+      if (loginRequiredActions.some(action => lowerText.includes(action))) {
+        toast.info(language === 'ru' ? 'Для продолжения необходимо войти в систему' : 'Login required to continue');
+        if (onLogin) onLogin();
+        return;
+      }
+    }
+    
     sendMessage(textToSend);
     setLocalInput('');
   };

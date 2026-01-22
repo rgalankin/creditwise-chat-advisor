@@ -11,18 +11,25 @@ interface ProfileViewProps {
   profile: any;
   updateProfile: (data: any) => Promise<any>;
   onStartChat?: () => void;
+  isGuestMode?: boolean;
+  onLogin?: () => void;
 }
 
-export function ProfileView({ profile, updateProfile, onStartChat }: ProfileViewProps) {
+export function ProfileView({ profile, updateProfile, onStartChat, isGuestMode = false, onLogin }: ProfileViewProps) {
   const { t, language } = useLanguage();
   const { credits } = useCredits();
 
   // Helper to check progress
-  const diagData = profile.financialData ? JSON.parse(profile.financialData) : null;
+  const diagData = profile?.financialData ? JSON.parse(profile.financialData) : null;
   const isDiagComplete = !!diagData?.step_7;
 
   const handleJurisdictionChange = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (isGuestMode) {
+      toast.info(language === 'ru' ? 'Войдите в систему для сохранения настроек' : 'Log in to save settings');
+      if (onLogin) onLogin();
+      return;
+    }
     const formData = new FormData(e.currentTarget);
     const jurisdiction = formData.get('jurisdiction') as string;
     
@@ -35,6 +42,11 @@ export function ProfileView({ profile, updateProfile, onStartChat }: ProfileView
   };
 
   const toggleConsent = async () => {
+    if (isGuestMode) {
+      toast.info(language === 'ru' ? 'Войдите в систему для предоставления согласия' : 'Log in to grant consent');
+      if (onLogin) onLogin();
+      return;
+    }
     try {
       await updateProfile({ hasConsent: Number(profile.hasConsent) > 0 ? "0" : "1" });
       toast.success(language === 'ru' ? 'Статус согласия изменен' : 'Consent status updated');

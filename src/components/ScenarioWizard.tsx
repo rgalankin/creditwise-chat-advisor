@@ -20,6 +20,8 @@ interface ScenarioWizardProps {
   onComplete: (result: ScenarioResult) => void;
   onBack: () => void;
   profile: any;
+  isGuestMode?: boolean;
+  onLogin?: () => void;
 }
 
 interface WizardStep {
@@ -96,7 +98,7 @@ const scenarioTitles: Record<ScenarioType, { ru: string; en: string }> = {
   bankruptcy: { ru: 'Банкротство', en: 'Bankruptcy' }
 };
 
-export function ScenarioWizard({ scenario, onComplete, onBack, profile }: ScenarioWizardProps) {
+export function ScenarioWizard({ scenario, onComplete, onBack, profile, isGuestMode = false, onLogin }: ScenarioWizardProps) {
   const { language } = useLanguage();
   const steps = scenarioSteps[scenario];
   const [currentStep, setCurrentStep] = useState(0);
@@ -136,6 +138,15 @@ export function ScenarioWizard({ scenario, onComplete, onBack, profile }: Scenar
   };
 
   const generateResult = useCallback(async () => {
+    if (isGuestMode) {
+      toast.info(
+        language === 'ru' 
+          ? 'Пожалуйста, войдите в систему, чтобы получить результат анализа' 
+          : 'Please log in to receive the analysis result'
+      );
+      if (onLogin) onLogin();
+      return;
+    }
     setIsGenerating(true);
     
     try {

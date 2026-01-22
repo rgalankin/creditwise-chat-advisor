@@ -13,7 +13,12 @@ import { ScenarioSummary } from './ScenarioSummary';
 type ActiveTab = 'chat' | 'profile' | 'documents' | 'admin' | 'pricing' | 'scenarios';
 type ScenarioView = 'selection' | 'wizard' | 'summary';
 
-export function ChatDashboard() {
+interface ChatDashboardProps {
+  isGuestMode?: boolean;
+  onLogin?: () => void;
+}
+
+export function ChatDashboard({ isGuestMode = false, onLogin }: ChatDashboardProps) {
   const [activeTab, setActiveTab] = useState<ActiveTab>('chat');
   const { profile, loading, updateProfile } = useProfile();
   const [isAdmin, setIsAdmin] = useState(false);
@@ -80,6 +85,8 @@ export function ChatDashboard() {
           <ScenarioSelectionScreen 
             onSelectScenario={handleSelectScenario}
             onBack={() => setActiveTab('chat')}
+            isGuestMode={isGuestMode}
+            onLogin={onLogin}
           />
         );
       case 'wizard':
@@ -89,6 +96,8 @@ export function ChatDashboard() {
             onComplete={handleScenarioComplete}
             onBack={handleBackFromWizard}
             profile={profile}
+            isGuestMode={isGuestMode}
+            onLogin={onLogin}
           />
         ) : null;
       case 'summary':
@@ -111,12 +120,34 @@ export function ChatDashboard() {
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
         isAdmin={isAdmin}
+        isGuestMode={isGuestMode}
+        onLogin={onLogin}
       />
       
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {activeTab === 'chat' && <ChatWindow profile={profile} updateProfile={updateProfile} />}
-        {activeTab === 'profile' && <ProfileView profile={profile} updateProfile={updateProfile} onStartChat={() => setActiveTab('chat')} />}
-        {activeTab === 'documents' && <DocumentsView />}
+        {activeTab === 'chat' && (
+          <ChatWindow 
+            profile={profile} 
+            updateProfile={updateProfile} 
+            isGuestMode={isGuestMode}
+            onLogin={onLogin}
+          />
+        )}
+        {activeTab === 'profile' && (
+          <ProfileView 
+            profile={profile} 
+            updateProfile={updateProfile} 
+            onStartChat={() => setActiveTab('chat')} 
+            isGuestMode={isGuestMode}
+            onLogin={onLogin}
+          />
+        )}
+        {activeTab === 'documents' && (
+          <DocumentsView 
+            isGuestMode={isGuestMode}
+            onLogin={onLogin}
+          />
+        )}
         {activeTab === 'admin' && isAdmin && <AdminPanel />}
         {activeTab === 'pricing' && <PricingPage />}
         {activeTab === 'scenarios' && renderScenarioContent()}

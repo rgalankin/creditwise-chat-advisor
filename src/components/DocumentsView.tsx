@@ -7,12 +7,21 @@ import { toast } from 'sonner';
 import { useLanguage } from '../lib/i18n';
 import { cn } from '../lib/utils';
 
-export function DocumentsView() {
+interface DocumentsViewProps {
+  isGuestMode?: boolean;
+  onLogin?: () => void;
+}
+
+export function DocumentsView({ isGuestMode = false, onLogin }: DocumentsViewProps) {
   const [documents, setDocuments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { t, language } = useLanguage();
 
   const fetchDocuments = async () => {
+    if (isGuestMode) {
+      setLoading(false);
+      return;
+    }
     try {
       const user = await blink.auth.me();
       if (!user) return;
@@ -33,6 +42,15 @@ export function DocumentsView() {
   }, []);
 
   const handleDemoUpload = () => {
+    if (isGuestMode) {
+      toast.info(
+        language === 'ru' 
+          ? 'Пожалуйста, войдите в систему для загрузки документов' 
+          : 'Please log in to upload documents'
+      );
+      if (onLogin) onLogin();
+      return;
+    }
     toast.info(language === 'ru' ? 'Имитация загрузки документа...' : 'Simulating document upload...');
     
     setTimeout(() => {

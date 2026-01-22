@@ -12,6 +12,7 @@ import {
   ArrowRight,
   Sparkles
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export type ScenarioType = 
   | 'credit' 
@@ -24,6 +25,8 @@ export type ScenarioType =
 interface ScenarioSelectionScreenProps {
   onSelectScenario: (scenario: ScenarioType) => void;
   onBack?: () => void;
+  isGuestMode?: boolean;
+  onLogin?: () => void;
 }
 
 interface ScenarioCard {
@@ -100,8 +103,21 @@ const scenarios: ScenarioCard[] = [
   }
 ];
 
-export function ScenarioSelectionScreen({ onSelectScenario, onBack }: ScenarioSelectionScreenProps) {
+export function ScenarioSelectionScreen({ onSelectScenario, onBack, isGuestMode = false, onLogin }: ScenarioSelectionScreenProps) {
   const { language } = useLanguage();
+
+  const handleSelect = (id: ScenarioType) => {
+    if (isGuestMode) {
+      toast.info(
+        language === 'ru' 
+          ? 'Пожалуйста, войдите в систему для использования сценариев' 
+          : 'Please log in to use scenarios'
+      );
+      if (onLogin) onLogin();
+      return;
+    }
+    onSelectScenario(id);
+  };
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -151,7 +167,7 @@ export function ScenarioSelectionScreen({ onSelectScenario, onBack }: ScenarioSe
               return (
                 <button
                   key={scenario.id}
-                  onClick={() => onSelectScenario(scenario.id)}
+                  onClick={() => handleSelect(scenario.id)}
                   className={cn(
                     "group relative p-6 rounded-2xl border bg-card text-left",
                     "transition-all duration-300 hover:shadow-xl hover:scale-[1.02] hover:border-primary/30",

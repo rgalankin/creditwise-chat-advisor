@@ -4,9 +4,10 @@ import { useLanguage } from '../lib/i18n';
 
 interface LandingPageProps {
   onLogin: () => void;
+  onStartDiagnostic: () => void;
 }
 
-export function LandingPage({ onLogin }: LandingPageProps) {
+export function LandingPage({ onLogin, onStartDiagnostic }: LandingPageProps) {
   const { t, language, setLanguage } = useLanguage();
 
   return (
@@ -58,7 +59,7 @@ export function LandingPage({ onLogin }: LandingPageProps) {
                   : 'We will help you understand your credit situation and choose a safe path forward'}
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button onClick={onLogin} size="lg" className="h-14 px-8 text-lg gap-2 font-bold shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90 text-primary-foreground">
+                <Button onClick={onStartDiagnostic} size="lg" className="h-14 px-8 text-lg gap-2 font-bold shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90 text-primary-foreground">
                   {language === 'ru' ? 'Начать диагностику' : 'Start Diagnostic'} <ArrowRight className="h-5 w-5" />
                 </Button>
                 <Button variant="outline" size="lg" className="h-14 px-8 text-lg font-bold border-primary text-primary hover:bg-primary/5">

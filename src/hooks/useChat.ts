@@ -5,6 +5,8 @@ import { useCredits } from './useCredits';
 import { useLanguage } from '../lib/i18n';
 import { chatApi, isN8nMode, initChatMode, ChatResponse } from '../lib/chatApi';
 
+const GUEST_SESSION_KEY = 'creditwise_guest_session';
+
 export type ChatState = 
   | 'INTRO' 
   | 'CONSENT' 
@@ -21,7 +23,7 @@ export type ChatState =
   | 'SCENARIO_RUN' 
   | 'CHAT';
 
-export function useChat(profile: any, updateProfile: (data: any) => Promise<any>) {
+export function useChat(profile: any, updateProfile: (data: any) => Promise<any>, isGuestMode = false) {
   const [messages, setMessages] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [session, setSession] = useState<any>(null);
@@ -72,7 +74,34 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
   }, [language]);
 
   const initSession = useCallback(async () => {
-    if (!profile) return;
+    if (!profile && !isGuestMode) return;
+    
+    if (isGuestMode) {
+      const guestSession = sessionStorage.getItem(GUEST_SESSION_KEY);
+      if (guestSession) {
+        const data = JSON.parse(guestSession);
+        setMessages(data.messages || []);
+        setChatState(data.chatState || 'INTRO');
+        setDiagnosticData(data.diagnosticData || {});
+        setSession({ id: 'guest_session' });
+        
+        if (!data.messages || data.messages.length === 0) {
+          const greeting = {
+            id: `msg_guest_${Date.now()}`,
+            role: 'assistant',
+            content: getInitialMessage('INTRO'),
+            createdAt: new Date().toISOString()
+          };
+          setMessages([greeting]);
+          sessionStorage.setItem(GUEST_SESSION_KEY, JSON.stringify({
+            ...data,
+            messages: [greeting]
+          }));
+        }
+      }
+      return;
+    }
+
     try {
       const sessions = await (blink.db as any).chatSessions.list({ 
         where: { userId: profile.userId },
@@ -117,7 +146,7 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
     } catch (error) {
       console.error('Session init error:', error);
     }
-  }, [profile, language, getInitialMessage]);
+  }, [profile, language, getInitialMessage, isGuestMode]);
 
   const getDiagnosticQuestion = (step: number) => {
     if (language === 'ru') {
@@ -146,11 +175,36 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
   };
 
   const moveToState = async (nextState: ChatState, assistantResponse: string, updatedDiagData?: any) => {
-    if (!session || !profile) return;
+    if ((!session || !profile) && !isGuestMode) return;
     
     setIsLoading(true);
     try {
       const meta = { state: nextState, diagnosticData: updatedDiagData || diagnosticData };
+      const content = assistantResponse;
+      
+      if (isGuestMode) {
+        const botMsg = {
+          id: `msg_guest_${Date.now()}`,
+          role: 'assistant',
+          content,
+          metadata: JSON.stringify(meta),
+          createdAt: new Date().toISOString()
+        };
+        const updatedMessages = [...messages, botMsg];
+        setMessages(updatedMessages);
+        setChatState(nextState);
+        if (updatedDiagData) setDiagnosticData(updatedDiagData);
+        
+        const guestData = JSON.parse(sessionStorage.getItem(GUEST_SESSION_KEY) || '{}');
+        sessionStorage.setItem(GUEST_SESSION_KEY, JSON.stringify({
+          ...guestData,
+          messages: updatedMessages,
+          chatState: nextState,
+          diagnosticData: updatedDiagData || diagnosticData
+        }));
+        return;
+      }
+
       const botMsg = await (blink.db as any).chatMessages.create({
         sessionId: session.id,
         userId: profile.userId,
@@ -399,7 +453,7 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
    * Выбирает между n8n API и локальной логикой
    */
   const sendMessage = async (content: string) => {
-    if (!content.trim() || !session || !profile) return;
+    if ((!content.trim() || !session || !profile) && !isGuestMode) return;
     
     // Demo Guardrails: PII Check (перед сохранением)
     const piiRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)|(\+?\d{10,15})|(\d{4}\s\d{6})|(\d{10})/g;
@@ -408,6 +462,31 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
       return;
     }
     
+    if (isGuestMode) {
+      const userMsg = {
+        id: `msg_guest_u_${Date.now()}`,
+        role: 'user',
+        content,
+        createdAt: new Date().toISOString()
+      };
+      const updatedMessages = [...messages, userMsg];
+      setMessages(updatedMessages);
+      
+      const guestData = JSON.parse(sessionStorage.getItem(GUEST_SESSION_KEY) || '{}');
+      sessionStorage.setItem(GUEST_SESSION_KEY, JSON.stringify({
+        ...guestData,
+        messages: updatedMessages
+      }));
+
+      // Выбрать режим обработки
+      if (apiMode === 'n8n') {
+        // ... handled in sendMessageViaN8n
+      } else {
+        await sendMessageLocal(content);
+      }
+      return;
+    }
+
     // Сохранить сообщение пользователя
     const userMsg = await (blink.db as any).chatMessages.create({
       sessionId: session.id,

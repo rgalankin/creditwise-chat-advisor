@@ -10,9 +10,11 @@ interface SidebarProps {
   activeTab: 'chat' | 'profile' | 'documents' | 'admin' | 'pricing' | 'scenarios';
   setActiveTab: (tab: 'chat' | 'profile' | 'documents' | 'admin' | 'pricing' | 'scenarios') => void;
   isAdmin?: boolean;
+  isGuestMode?: boolean;
+  onLogin?: () => void;
 }
 
-export function Sidebar({ activeTab, setActiveTab, isAdmin }: SidebarProps) {
+export function Sidebar({ activeTab, setActiveTab, isAdmin, isGuestMode = false, onLogin }: SidebarProps) {
   const { language, setLanguage, t } = useLanguage();
   const { credits } = useCredits();
 
@@ -120,15 +122,27 @@ export function Sidebar({ activeTab, setActiveTab, isAdmin }: SidebarProps) {
             <Globe className="h-4 w-4" />
             {language === 'ru' ? 'EN' : 'RU'}
           </Button>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="flex-1 justify-center gap-2 h-10 rounded-xl font-bold text-destructive hover:text-destructive hover:bg-destructive/5"
-            onClick={() => blink.auth.logout()}
-          >
-            <LogOut className="h-4 w-4" />
-            {language === 'ru' ? 'Выход' : 'Exit'}
-          </Button>
+          {isGuestMode ? (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex-1 justify-center gap-2 h-10 rounded-xl font-bold border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+              onClick={onLogin}
+            >
+              <LogOut className="h-4 w-4 rotate-180" />
+              {language === 'ru' ? 'Вход' : 'Login'}
+            </Button>
+          ) : (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="flex-1 justify-center gap-2 h-10 rounded-xl font-bold text-destructive hover:text-destructive hover:bg-destructive/5"
+              onClick={() => blink.auth.logout()}
+            >
+              <LogOut className="h-4 w-4" />
+              {language === 'ru' ? 'Выход' : 'Exit'}
+            </Button>
+          )}
         </div>
       </div>
     </aside>

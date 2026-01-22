@@ -156,24 +156,29 @@ async function handler(req: Request): Promise<Response> {
     const n8nUrl = Deno.env.get("N8N_WEBHOOK_URL");
     const n8nSecret = Deno.env.get("N8N_WEBHOOK_SECRET");
 
+    console.log(`[chat-proxy] Environment check: n8nUrl=${n8nUrl ? 'SET' : 'NOT_SET'}, n8nSecret=${n8nSecret ? 'SET' : 'NOT_SET'}`);
+
     // ==========================================================================
     // FALLBACK MODE (без n8n - для демо)
     // ==========================================================================
 
     if (!n8nUrl) {
       console.log(`[chat-proxy] Fallback mode for endpoint: ${targetEndpoint}`);
-      
+
       // В fallback режиме возвращаем базовый ответ
       // Вся логика остаётся на фронте (в useChat)
-      return jsonResponse({
-        text: "",
-        state: "INTRO",
+      const fallbackResponse = {
+        text: "Hello! How can I assist you today?",
+        state: "CHAT",
         sessionId: data.sessionId || `fallback_${Date.now()}`,
-        fallback: true,
+        ui: [],
         meta: {
-          event: { type: "fallback_mode" }
+          event: { type: "message_processed" }
         }
-      });
+      };
+
+      console.log(`[chat-proxy] Fallback response:`, fallbackResponse);
+      return jsonResponse(fallbackResponse);
     }
 
     // ==========================================================================

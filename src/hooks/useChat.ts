@@ -1,15 +1,59 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { blink } from '../lib/blink';
 import { toast } from 'sonner';
 import { useCredits } from './useCredits';
 import { useLanguage } from '../lib/i18n';
 
-export function useChat(profile: any) {
+export type ChatState = 
+  | 'INTRO' 
+  | 'CONSENT' 
+  | 'JURISDICTION' 
+  | 'DIAGNOSTIC_1' 
+  | 'DIAGNOSTIC_2' 
+  | 'DIAGNOSTIC_3' 
+  | 'DIAGNOSTIC_4' 
+  | 'DIAGNOSTIC_5' 
+  | 'DIAGNOSTIC_6' 
+  | 'DIAGNOSTIC_7' 
+  | 'SUMMARY' 
+  | 'SCENARIOS' 
+  | 'SCENARIO_RUN' 
+  | 'CHAT';
+
+export function useChat(profile: any, updateProfile: (data: any) => Promise<any>) {
   const [messages, setMessages] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [session, setSession] = useState<any>(null);
+  const [chatState, setChatState] = useState<ChatState>('INTRO');
+  const [diagnosticData, setDiagnosticData] = useState<any>({});
   const { useCredit } = useCredits();
   const { t, language } = useLanguage();
+
+  const getInitialMessage = useCallback((state: ChatState) => {
+    if (language === 'ru') {
+      switch (state) {
+        case 'INTRO':
+          return "Я помогу разобраться в вашей кредитной ситуации и предложу безопасный план действий. \n\nЭто займёт **5–7 минут**, документы не нужны на старте. \n\nВ демо-режиме **не вводите персональные данные**.";
+        case 'CONSENT':
+          return "Чтобы продолжить, необходимо согласие на обработку данных. Информация используется только для подготовки рекомендаций.";
+        case 'JURISDICTION':
+          return "В какой стране вы находитесь? Рекомендации зависят от местных правил.";
+        default:
+          return "";
+      }
+    } else {
+      switch (state) {
+        case 'INTRO':
+          return "I will help you understand your credit situation and suggest a safe course of action. \n\nIt will take **5–7 minutes**, documents are not needed at the start. \n\nIn demo mode, **do not enter personal data**.";
+        case 'CONSENT':
+          return "To continue, consent to data processing is required. Information is used only for preparing recommendations.";
+        case 'JURISDICTION':
+          return "What country are you in? Recommendations depend on local rules.";
+        default:
+          return "";
+      }
+    }
+  }, [language]);
 
   const initSession = useCallback(async () => {
     if (!profile) return;
@@ -25,165 +69,242 @@ export function useChat(profile: any) {
       if (!activeSession) {
         activeSession = await (blink.db as any).chatSessions.create({
           userId: profile.userId,
-          title: 'Initial Consultation'
+          title: language === 'ru' ? 'Первичная диагностика' : 'Initial Diagnostic'
         });
         
         const greeting = {
           sessionId: activeSession.id,
           userId: profile.userId,
           role: 'assistant',
-          content: language === 'ru' 
-            ? "Здравствуйте! Я ваш советник Кредо-Сервис. Я здесь, чтобы помочь вам разобраться в вашей финансовой ситуации. \n\nПрежде чем мы начнем, в какой стране или регионе вы находитесь? Мои рекомендации сильно зависят от местного финансового законодательства."
-            : "Hello! I'm your Credo-Service Advisor. I'm here to help you navigate your financial situation. \n\nBefore we begin, what country or region are you located in? My recommendations depend heavily on local financial regulations."
+          content: getInitialMessage('INTRO'),
+          metadata: JSON.stringify({ state: 'INTRO' })
         };
         const createdMsg = await (blink.db as any).chatMessages.create(greeting);
         setMessages([createdMsg]);
+        setChatState('INTRO');
       } else {
         const msgs = await (blink.db as any).chatMessages.list({
           where: { sessionId: activeSession.id },
           orderBy: { createdAt: 'asc' }
         });
         setMessages(msgs);
+        
+        // Restore state from last message or session
+        const lastMsg = msgs[msgs.length - 1];
+        if (lastMsg?.metadata) {
+          const meta = JSON.parse(lastMsg.metadata);
+          if (meta.state) setChatState(meta.state);
+          if (meta.diagnosticData) setDiagnosticData(meta.diagnosticData);
+        }
       }
       setSession(activeSession);
     } catch (error) {
       console.error('Session init error:', error);
     }
-  }, [profile, language]);
+  }, [profile, language, getInitialMessage]);
 
-  const sendMessage = async (content: string) => {
-    if (!content.trim() || !session || !profile) return;
+  const getDiagnosticQuestion = (step: number) => {
+    if (language === 'ru') {
+      switch (step) {
+        case 1: return { q: "Что вам сейчас важнее всего?", options: ["Получить кредит", "Рефинансировать", "Выйти из долгов", "Улучшить кредитную историю", "Вернуть страховку", "Проверить банкротство"] };
+        case 2: return { q: "У вас сейчас есть действующие кредиты или долги?", options: ["Да, есть", "Нет", "Не уверен(а)"] };
+        case 3: return { q: "Есть просрочки по платежам?", options: ["Нет", "Да, до 30 дней", "Да, 30–90 дней", "Да, больше 90 дней", "Не знаю"] };
+        case 4: return { q: "Какой у вас примерно ежемесячный доход?", options: ["0–50k", "50–100k", "100–200k", "200k+", "Нестабильный"] };
+        case 5: return { q: "Сколько в месяц уходит на платежи по кредитам?", options: ["0", "до 10k", "10–30k", "30–70k", "70k+", "Не знаю"] };
+        case 6: return { q: "Как вы оцениваете свою кредитную историю?", options: ["Хорошая", "Средняя", "Плохая", "Не знаю"] };
+        case 7: return { q: "Насколько срочно нужно решение?", options: ["Сегодня/завтра", "В течение недели", "В течение месяца", "Пока просто хочу понять варианты"] };
+        default: return { q: "", options: [] };
+      }
+    } else {
+      switch (step) {
+        case 1: return { q: "What is most important to you right now?", options: ["Get a loan", "Refinance", "Get out of debt", "Improve credit history", "Return insurance", "Check bankruptcy"] };
+        case 2: return { q: "Do you currently have active loans or debts?", options: ["Yes, I have", "No", "Not sure"] };
+        case 3: return { q: "Are there any payment delays?", options: ["No", "Yes, up to 30 days", "Yes, 30–90 days", "Yes, more than 90 days", "Don't know"] };
+        case 4: return { q: "What is your approximate monthly income?", options: ["0–50k", "50–100k", "100–200k", "200k+", "Unstable"] };
+        case 5: return { q: "How much per month goes to loan payments?", options: ["0", "up to 10k", "10–30k", "30–70k", "70k+", "Don't know"] };
+        case 6: return { q: "How do you rate your credit history?", options: ["Good", "Average", "Bad", "Don't know"] };
+        case 7: return { q: "How urgent is the solution needed?", options: ["Today/tomorrow", "Within a week", "Within a month", "Just want to understand options"] };
+        default: return { q: "", options: [] };
+      }
+    }
+  };
 
-    // Credit check
-    const hasCredit = await useCredit();
-    if (!hasCredit) return;
-
-    const userMsg = {
-      sessionId: session.id,
-      userId: profile.userId,
-      role: 'user',
-      content
-    };
-
+  const moveToState = async (nextState: ChatState, assistantResponse: string, updatedDiagData?: any) => {
+    if (!session || !profile) return;
+    
     setIsLoading(true);
     try {
-      const createdUserMsg = await (blink.db as any).chatMessages.create(userMsg);
-      setMessages(prev => [...prev, createdUserMsg]);
-
-      const systemPrompt = `You are the Credo-Service Advisor, a world-class, unbiased, and systematic financial intelligence agent.
-Your goal is to provide "Wow-effect" analytics and solutions for credit health, debt restructuring, and bankruptcy.
-
-USER CONTEXT:
-Jurisdiction: ${profile.jurisdiction || 'Unknown'}
-Language: ${language}
-Consent: ${Number(profile.hasConsent) > 0 ? 'Granted' : 'Not Granted'}
-Profile: ${profile.financialData || 'No data yet'}
-
-PRINCIPLES:
-1. BE AN ADVOCATE: You work for the user, not the banks. Find the most favorable paths.
-2. JURISDICTION EXPERT: Always provide advice strictly within the context of the user's laws.
-3. DATA-DRIVEN: Use the user's documents and data for pinpoint accuracy.
-4. HONEST & SYSTEMIC: If a situation is difficult, be honest but provide a step-by-step recovery plan.
-5. NO BROKERS: You are an independent AI, not a broker trying to sell a service.
-
-Respond in ${language === 'ru' ? 'Russian' : 'English'}. 
-If jurisdiction is unknown, emphasize that your precision depends on knowing the country.`;
-
-      let fullResponse = '';
-      const botMsgId = `msg_a_${Date.now()}`;
-      
-      // Temporary message for streaming
-      const tempBotMsg = {
-        id: botMsgId,
-        role: 'assistant',
-        content: '',
-        isStreaming: true
-      };
-      setMessages(prev => [...prev, tempBotMsg]);
-
-      await blink.ai.streamText({
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...messages.map(m => ({ role: m.role, content: m.content })),
-          { role: 'user', content }
-        ]
-      }, (chunk) => {
-        fullResponse += chunk;
-        setMessages(prev => prev.map(m => 
-          m.id === botMsgId ? { ...m, content: fullResponse } : m
-        ));
-      });
-
-      const finalBotMsg = await (blink.db as any).chatMessages.create({
+      const meta = { state: nextState, diagnosticData: updatedDiagData || diagnosticData };
+      const botMsg = await (blink.db as any).chatMessages.create({
         sessionId: session.id,
         userId: profile.userId,
         role: 'assistant',
-        content: fullResponse
+        content: assistantResponse,
+        metadata: JSON.stringify(meta)
       });
-
-      setMessages(prev => prev.map(m => m.id === botMsgId ? finalBotMsg : m));
-
-    } catch (error) {
-      console.error('Chat error:', error);
-      toast.error('Connection issue. Please try again.');
+      setMessages(prev => [...prev, botMsg]);
+      setChatState(nextState);
+      if (updatedDiagData) setDiagnosticData(updatedDiagData);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const uploadDocument = async (file: File) => {
-    if (!session || !profile) return;
+  const sendMessage = async (content: string) => {
+    if (!content.trim() || !session || !profile) return;
 
-    toast.info(language === 'ru' ? `Анализ ${file.name}...` : `Analyzing ${file.name}...`);
-    try {
-      const { publicUrl } = await blink.storage.upload(
-        file,
-        `docs/${profile.userId}/${Date.now()}_${file.name}`
-      );
+    // Demo Guardrails: PII Check
+    const piiRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)|(\+?\d{10,15})|(\d{4}\s\d{6})|(\d{10})/g;
+    if (piiRegex.test(content)) {
+      toast.warning(language === 'ru' ? "В демо-версии не вводите персональные данные." : "In demo mode, do not enter personal data.");
+      return;
+    }
 
-      const analysisPrompt = `Extract key financial data from this document. Return a JSON object with: 
-      - document_type (e.g., invoice, bank_statement, id)
-      - extracted_entities (names, amounts, dates)
-      - summary (brief overview of the financial state shown)
-      
-      Document: ${file.name}`;
-
-      const { text } = await blink.ai.generateText({
-        messages: [
-          { role: 'system', content: 'You are a financial document parser.' },
-          { role: 'user', content: [
-            { type: 'text', text: analysisPrompt },
-            { type: 'image', image: publicUrl }
-          ]}
-        ]
-      });
-
-      await (blink.db as any).userDocuments.create({
-        userId: profile.userId,
-        name: file.name,
-        url: publicUrl,
-        extractedData: text
-      });
-
-      const botMsgContent = language === 'ru'
-        ? `Я проанализировал ваш документ: **${file.name}**. \n\nНа основе извлеченных данных я теперь могу дать более конкретные советы. Хотите просмотреть результаты или продолжить задавать вопросы?`
-        : `I've successfully analyzed your document: **${file.name}**. \n\nBased on the data extracted, I can now give more specific advice. Would you like to review the findings or continue with your questions?`;
-
+    // Prohibited keywords
+    const prohibitedKeywords = ['гарантируй', 'подделать', 'обойти закон', 'guarantee', 'forge', 'bypass law'];
+    if (prohibitedKeywords.some(k => content.toLowerCase().includes(k))) {
       const botMsg = await (blink.db as any).chatMessages.create({
         sessionId: session.id,
         userId: profile.userId,
         role: 'assistant',
-        content: botMsgContent
+        content: language === 'ru' 
+          ? "Я не могу помогать с такими действиями. Могу предложить легальные и безопасные варианты." 
+          : "I cannot assist with such actions. I can suggest legal and safe options.",
+        metadata: JSON.stringify({ state: chatState, diagnosticData })
       });
+      setMessages(prev => [...prev, { role: 'user', content }, botMsg]);
+      return;
+    }
 
-      setMessages(prev => [...prev, botMsg]);
-      toast.success(language === 'ru' ? 'Документ проанализирован.' : 'Document analyzed.');
+    const userMsg = await (blink.db as any).chatMessages.create({
+      sessionId: session.id,
+      userId: profile.userId,
+      role: 'user',
+      content
+    });
+    setMessages(prev => [...prev, userMsg]);
 
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast.error(language === 'ru' ? 'Ошибка обработки документа.' : 'Failed to process document.');
+    // FSM Logic
+    if (chatState === 'INTRO') {
+      await moveToState('CONSENT', getInitialMessage('CONSENT'));
+    } else if (chatState === 'CONSENT') {
+      if (content.toLowerCase().includes('согласен') || content.toLowerCase().includes('да') || content.toLowerCase().includes('agree') || content.toLowerCase().includes('yes')) {
+        await updateProfile({ hasConsent: 1 });
+        await moveToState('JURISDICTION', getInitialMessage('JURISDICTION'));
+      } else {
+        await moveToState('INTRO', "Для продолжения необходимо ваше согласие.");
+      }
+    } else if (chatState === 'JURISDICTION') {
+      await updateProfile({ jurisdiction: content });
+      const qObj = getDiagnosticQuestion(1);
+      await moveToState('DIAGNOSTIC_1', qObj.q);
+    } else if (chatState.startsWith('DIAGNOSTIC_')) {
+      const currentStep = parseInt(chatState.split('_')[1]);
+      const nextStep = currentStep + 1;
+      const updatedData = { ...diagnosticData, [`step_${currentStep}`]: content };
+      
+      if (nextStep <= 7) {
+        const qObj = getDiagnosticQuestion(nextStep);
+        await moveToState(`DIAGNOSTIC_${nextStep}` as ChatState, qObj.q, updatedData);
+      } else {
+        // Generate Summary via AI
+        setIsLoading(true);
+        try {
+          const summaryPrompt = `Based on these diagnostic answers, generate a concise financial situation summary, risks (3 points), and first steps (3 points).
+          
+          Answers: ${JSON.stringify(updatedData)}
+          Jurisdiction: ${profile.jurisdiction}
+          
+          Format it professionally as the Credo-Service Advisor.`;
+          
+          const { text } = await blink.ai.generateText({
+            messages: [
+              { role: 'system', content: 'You are a credit advisor. Be professional and supportive.' },
+              { role: 'user', content: summaryPrompt }
+            ]
+          });
+          
+          await updateProfile({ financialData: JSON.stringify(updatedData) });
+          await moveToState('SUMMARY', text, updatedData);
+        } catch (error) {
+          console.error('Summary error:', error);
+          await moveToState('SUMMARY', language === 'ru' ? 'Диагностика завершена. Вот краткий итог по вашей ситуации...' : 'Diagnostic complete. Here is a summary of your situation...', updatedData);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    } else {
+      // Free chat or AI response
+      const hasCredit = await useCredit();
+      if (!hasCredit) return;
+
+      setIsLoading(true);
+      try {
+        const systemPrompt = `You are the Credo-Service Advisor.
+        User Context: ${profile.jurisdiction || 'Unknown'}, Financial Data: ${JSON.stringify(diagnosticData)}.
+        Respond as a professional, unbiased advisor.`;
+
+        let fullResponse = '';
+        const botMsgId = `msg_a_${Date.now()}`;
+        
+        setMessages(prev => [...prev, { id: botMsgId, role: 'assistant', content: '', isStreaming: true }]);
+
+        await blink.ai.streamText({
+          messages: [
+            { role: 'system', content: systemPrompt },
+            ...messages.map(m => ({ role: m.role, content: m.content })),
+            { role: 'user', content }
+          ]
+        }, (chunk) => {
+          fullResponse += chunk;
+          setMessages(prev => prev.map(m => m.id === botMsgId ? { ...m, content: fullResponse } : m));
+        });
+
+        const finalBotMsg = await (blink.db as any).chatMessages.create({
+          sessionId: session.id,
+          userId: profile.userId,
+          role: 'assistant',
+          content: fullResponse,
+          metadata: JSON.stringify({ state: chatState, diagnosticData })
+        });
+
+        setMessages(prev => prev.map(m => m.id === botMsgId ? finalBotMsg : m));
+      } catch (error) {
+        console.error('Chat error:', error);
+        toast.error('Connection issue.');
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
-  return { messages, isLoading, sendMessage, uploadDocument, initSession };
+  const uploadDocument = async (file: File) => {
+    // ... same as before but update state/metadata if needed
+    if (!session || !profile) return;
+    toast.info(language === 'ru' ? `Анализ ${file.name}...` : `Analyzing ${file.name}...`);
+    try {
+      const { publicUrl } = await blink.storage.upload(file, `docs/${profile.userId}/${Date.now()}_${file.name}`);
+      const analysisPrompt = `Extract key financial data from this document. Document: ${file.name}`;
+      const { text } = await blink.ai.generateText({
+        messages: [
+          { role: 'system', content: 'You are a financial document parser.' },
+          { role: 'user', content: [{ type: 'text', text: analysisPrompt }, { type: 'image', image: publicUrl }]}
+        ]
+      });
+      await (blink.db as any).userDocuments.create({ userId: profile.userId, name: file.name, url: publicUrl, extractedData: text });
+      const botMsg = await (blink.db as any).chatMessages.create({
+        sessionId: session.id,
+        userId: profile.userId,
+        role: 'assistant',
+        content: language === 'ru' ? `Документ **${file.name}** проанализирован.` : `Document **${file.name}** analyzed.`,
+        metadata: JSON.stringify({ state: chatState, diagnosticData })
+      });
+      setMessages(prev => [...prev, botMsg]);
+    } catch (error) {
+      toast.error('Failed to process document.');
+    }
+  };
+
+  return { messages, isLoading, sendMessage, uploadDocument, initSession, chatState, diagnosticData, getDiagnosticQuestion };
 }
+

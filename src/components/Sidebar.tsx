@@ -1,9 +1,10 @@
 import { Button } from './ui/button';
-import { MessageSquare, User, FileText, Settings, LogOut, Shield, LayoutDashboard, Globe, Wallet, CreditCard } from 'lucide-react';
+import { MessageSquare, User, FileText, Settings, LogOut, Shield, LayoutDashboard, Globe, Wallet, CreditCard, Info } from 'lucide-react';
 import { blink } from '../lib/blink';
 import { cn } from '../lib/utils';
 import { useLanguage } from '../lib/i18n';
 import { useCredits } from '../hooks/useCredits';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 interface SidebarProps {
   activeTab: 'chat' | 'profile' | 'documents' | 'admin' | 'pricing';
@@ -16,35 +17,42 @@ export function Sidebar({ activeTab, setActiveTab, isAdmin }: SidebarProps) {
   const { credits } = useCredits();
 
   const navItems = [
-    { id: 'chat', label: t('startChat'), icon: MessageSquare },
-    { id: 'profile', label: t('profile'), icon: User },
-    { id: 'documents', label: t('documents'), icon: FileText },
-    { id: 'pricing', label: t('upgrade'), icon: CreditCard },
+    { id: 'chat', label: language === 'ru' ? 'Начать чат' : 'Start Chat', icon: MessageSquare },
+    { id: 'profile', label: language === 'ru' ? 'Профиль' : 'Profile', icon: User },
+    { id: 'documents', label: language === 'ru' ? 'Документы' : 'Documents', icon: FileText },
+    { id: 'pricing', label: language === 'ru' ? 'Улучшить' : 'Upgrade', icon: CreditCard },
   ];
 
   return (
-    <aside className="w-64 border-r flex flex-col h-screen shrink-0 bg-background">
+    <aside className="w-64 border-r flex flex-col h-screen shrink-0 bg-card shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-20">
       <div className="p-6">
-        <div className="flex items-center gap-2 mb-8">
-          <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center p-1.5">
-            <img src="https://credoserv.ru/img/48438455.png" alt="Logo" className="w-full h-full object-contain invert" />
+        <div className="flex items-center gap-3 mb-10 group cursor-pointer" onClick={() => setActiveTab('chat')}>
+          <div className="h-10 w-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform">
+            <img 
+              src="https://firebasestorage.googleapis.com/v0/b/blink-451505.firebasestorage.app/o/user-uploads%2FendNQpF5nghlJxKVPTu4iQirL503%2Flogo-__e444df85.png?alt=media&token=3dc97fca-5f68-4d47-a4a6-debc1a8860bd" 
+              alt="Logo" 
+              className="w-7 h-7 object-contain invert" 
+            />
           </div>
-          <span className="font-bold text-xl tracking-tight">Кредо-Сервис</span>
+          <div className="flex flex-col -space-y-1">
+            <span className="font-black text-lg tracking-tight">Кредо</span>
+            <span className="font-bold text-xs text-primary/80 uppercase tracking-widest">Сервис</span>
+          </div>
         </div>
 
-        <nav className="space-y-1">
+        <nav className="space-y-1.5">
           {navItems.map((item) => (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id as any)}
               className={cn(
-                "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all group",
                 activeTab === item.id 
-                  ? "bg-secondary text-foreground shadow-sm border border-border" 
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" 
+                  : "text-muted-foreground hover:text-primary hover:bg-primary/5"
               )}
             >
-              <item.icon className="h-5 w-5" />
+              <item.icon className={cn("h-5 w-5 transition-transform", activeTab !== item.id && "group-hover:scale-110")} />
               {item.label}
             </button>
           ))}
@@ -53,9 +61,9 @@ export function Sidebar({ activeTab, setActiveTab, isAdmin }: SidebarProps) {
             <button
               onClick={() => setActiveTab('admin')}
               className={cn(
-                "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors mt-4",
+                "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all mt-6",
                 activeTab === 'admin' 
-                  ? "bg-secondary text-primary shadow-sm border border-primary/20" 
+                  ? "bg-secondary text-primary border border-primary/20 shadow-sm" 
                   : "text-muted-foreground hover:text-primary hover:bg-primary/5"
               )}
             >
@@ -66,32 +74,61 @@ export function Sidebar({ activeTab, setActiveTab, isAdmin }: SidebarProps) {
         </nav>
       </div>
 
-      <div className="mt-auto p-6 border-t space-y-4">
-        <div className="bg-secondary/50 rounded-lg p-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Wallet className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium">{t('credits')}</span>
+      <div className="mt-auto p-6 space-y-4">
+        {/* Credits Widget */}
+        <div className="bg-primary/5 rounded-2xl p-4 border border-primary/10 relative overflow-hidden group">
+          <div className="absolute -right-2 -bottom-2 h-12 w-12 bg-primary/5 rounded-full blur-xl group-hover:scale-150 transition-transform" />
+          <div className="flex items-center justify-between mb-2 relative z-10">
+            <div className="flex items-center gap-2">
+              <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Wallet className="w-3.5 h-3.5 text-primary" />
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-widest text-primary/70">{language === 'ru' ? 'Баланс' : 'Balance'}</span>
+            </div>
+            <span className="text-sm font-black text-primary">{credits ?? '...'}</span>
           </div>
-          <span className="text-sm font-bold">{credits ?? '...'}</span>
+          
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1.5 cursor-help">
+                  <Info className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider underline decoration-dotted underline-offset-2">
+                    {language === 'ru' ? 'Как списывается?' : 'How it works?'}
+                  </span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="bg-card text-foreground border-primary/20 shadow-xl p-3 max-w-[200px]">
+                <p className="text-[10px] font-medium leading-relaxed">
+                  {language === 'ru' 
+                    ? 'Кредиты списываются за этапы анализа и отчёты, а не за простые сообщения.' 
+                    : 'Credits are deducted for analysis stages and reports, not simple messages.'}
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
 
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="w-full justify-start gap-3"
-          onClick={() => setLanguage(language === 'ru' ? 'en' : 'ru')}
-        >
-          <Globe className="h-5 w-5" />
-          {language === 'ru' ? 'English' : 'Русский'}
-        </Button>
-
-        <button 
-          onClick={() => blink.auth.logout()}
-          className="flex items-center gap-3 px-3 py-2 text-sm text-destructive hover:text-destructive/80 w-full transition-colors"
-        >
-          <LogOut className="h-5 w-5" />
-          {t('logout')}
-        </button>
+        <div className="flex gap-2">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="flex-1 justify-center gap-2 h-10 rounded-xl font-bold border border-transparent hover:border-primary/10 hover:bg-primary/5"
+            onClick={() => setLanguage(language === 'ru' ? 'en' : 'ru')}
+          >
+            <Globe className="h-4 w-4" />
+            {language === 'ru' ? 'EN' : 'RU'}
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="flex-1 justify-center gap-2 h-10 rounded-xl font-bold text-destructive hover:text-destructive hover:bg-destructive/5"
+            onClick={() => blink.auth.logout()}
+          >
+            <LogOut className="h-4 w-4" />
+            {language === 'ru' ? 'Выход' : 'Exit'}
+          </Button>
+        </div>
       </div>
     </aside>
   );

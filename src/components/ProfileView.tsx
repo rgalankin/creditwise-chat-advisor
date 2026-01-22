@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from './ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
-import { User, Globe, Shield, Calendar, CreditCard, Sparkles, AlertCircle, ArrowRight, Wallet } from 'lucide-react';
+import { User, Globe, Shield, Calendar, CreditCard, Sparkles, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '../lib/utils';
 import { useLanguage } from '../lib/i18n';
@@ -10,11 +10,16 @@ import { useCredits } from '../hooks/useCredits';
 interface ProfileViewProps {
   profile: any;
   updateProfile: (data: any) => Promise<any>;
+  onStartChat?: () => void;
 }
 
-export function ProfileView({ profile, updateProfile }: ProfileViewProps) {
+export function ProfileView({ profile, updateProfile, onStartChat }: ProfileViewProps) {
   const { t, language } = useLanguage();
   const { credits } = useCredits();
+
+  // Helper to check progress
+  const diagData = profile.financialData ? JSON.parse(profile.financialData) : null;
+  const isDiagComplete = !!diagData?.step_7;
 
   const handleJurisdictionChange = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -42,17 +47,61 @@ export function ProfileView({ profile, updateProfile }: ProfileViewProps) {
     <div className="p-8 max-w-5xl mx-auto w-full space-y-8 animate-fade-in overflow-y-auto chat-height scrollbar-hide">
       <div className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">
-          {language === 'ru' ? 'Финансовый профиль' : 'Financial Profile'}
+          {language === 'ru' ? 'Личный профиль' : 'Personal Profile'}
         </h1>
         <p className="text-muted-foreground">
           {language === 'ru' 
-            ? 'Ваша цифровая финансовая личность для персонализированных рекомендаций.'
-            : 'Your digital financial identity for personalized recommendations.'}
+            ? 'Центр управления вашим финансовым путем.'
+            : 'Management center for your financial journey.'}
         </p>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
+          {/* Your Journey Card */}
+          <Card className="border-2 border-primary/10 shadow-lg shadow-primary/5">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <ArrowRight className="h-5 w-5 text-primary" />
+                {language === 'ru' ? 'Ваш путь' : 'Your Journey'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <JourneyStep 
+                  label={language === 'ru' ? 'Диагностика' : 'Diagnostic'} 
+                  status={isDiagComplete ? 'completed' : 'in_progress'} 
+                  language={language}
+                />
+                <JourneyStep 
+                  label={language === 'ru' ? 'Итог диагностики' : 'Summary'} 
+                  status={isDiagComplete ? 'completed' : 'pending'} 
+                  language={language}
+                />
+                <JourneyStep 
+                  label={language === 'ru' ? 'Сценарии' : 'Scenarios'} 
+                  status={isDiagComplete ? 'completed' : 'pending'} 
+                  language={language}
+                />
+                <JourneyStep 
+                  label={language === 'ru' ? 'Глубокий анализ КИ' : 'Deep Analysis'} 
+                  status="locked" 
+                  language={language}
+                />
+              </div>
+              {!isDiagComplete && (
+                <Button onClick={onStartChat} className="w-full font-bold h-11 bg-primary shadow-lg shadow-primary/20">
+                  {language === 'ru' ? 'Продолжить диагностику' : 'Continue Diagnostic'}
+                </Button>
+              )}
+              {isDiagComplete && (
+                <Button onClick={onStartChat} variant="outline" className="w-full font-bold h-11 border-primary text-primary">
+                  {language === 'ru' ? 'Перейти к сценариям' : 'Go to Scenarios'}
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+
           <div className="grid md:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
@@ -161,18 +210,20 @@ export function ProfileView({ profile, updateProfile }: ProfileViewProps) {
                  <Metric label={language === 'ru' ? 'Риск' : 'Risk'} value={language === 'ru' ? 'Низкий' : 'Low'} color="text-emerald-500" />
                </div>
                
-               <div className="p-6 border rounded-2xl bg-secondary/30 border-dashed flex flex-col items-center text-center space-y-3">
-                 <AlertCircle className="h-8 w-8 text-muted-foreground/50" />
-                 <div>
-                   <p className="font-bold">{language === 'ru' ? 'Анализ не завершен' : 'Analysis Incomplete'}</p>
-                   <p className="text-sm text-muted-foreground">
-                     {language === 'ru' 
-                       ? 'Завершите диагностический чат или загрузите документы, чтобы увидеть подробные метрики.'
-                       : 'Finish your diagnostic chat or upload documents to see detailed metrics.'}
-                   </p>
+               {!isDiagComplete && (
+                 <div className="p-6 border rounded-2xl bg-secondary/30 border-dashed flex flex-col items-center text-center space-y-3">
+                   <AlertCircle className="h-8 w-8 text-muted-foreground/50" />
+                   <div>
+                     <p className="font-bold">{language === 'ru' ? 'Анализ не завершен' : 'Analysis Incomplete'}</p>
+                     <p className="text-sm text-muted-foreground">
+                       {language === 'ru' 
+                         ? 'Завершите диагностический чат или загрузите документы, чтобы увидеть подробные метрики.'
+                         : 'Finish your diagnostic chat or upload documents to see detailed metrics.'}
+                     </p>
+                   </div>
+                   <Button onClick={onStartChat} variant="outline" size="sm" className="font-bold">{t('startChat')}</Button>
                  </div>
-                 <Button variant="outline" size="sm" className="font-bold">{t('startChat')}</Button>
-               </div>
+               )}
             </CardContent>
           </Card>
         </div>
@@ -191,13 +242,13 @@ export function ProfileView({ profile, updateProfile }: ProfileViewProps) {
               </p>
               
               <div className="space-y-3 pt-2">
-                <ScenarioItem title={language === 'ru' ? 'Консолидация долга' : 'Debt Consolidation'} active={false} />
-                <ScenarioItem title={language === 'ru' ? 'Исправление кредита' : 'Credit Repair'} active={false} />
-                <ScenarioItem title={language === 'ru' ? 'Проверка на банкротство' : 'Bankruptcy Check'} active={false} />
+                <ScenarioItem title={language === 'ru' ? 'Консолидация долга' : 'Debt Consolidation'} active={isDiagComplete} />
+                <ScenarioItem title={language === 'ru' ? 'Исправление кредита' : 'Credit Repair'} active={isDiagComplete} />
+                <ScenarioItem title={language === 'ru' ? 'Проверка на банкротство' : 'Bankruptcy Check'} active={isDiagComplete} />
               </div>
 
-              <Button className="w-full bg-primary-foreground text-primary hover:bg-secondary mt-4 group font-bold">
-                {language === 'ru' ? 'Создать сценарии' : 'Generate Scenarios'} <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              <Button onClick={onStartChat} className="w-full bg-primary-foreground text-primary hover:bg-secondary mt-4 group font-bold">
+                {language === 'ru' ? (isDiagComplete ? 'Перейти к сценариям' : 'Создать сценарии') : (isDiagComplete ? 'View Scenarios' : 'Generate Scenarios')} <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </Button>
             </CardContent>
           </Card>
@@ -219,6 +270,43 @@ export function ProfileView({ profile, updateProfile }: ProfileViewProps) {
   );
 }
 
+function JourneyStep({ label, status, language }: { label: string, status: 'completed' | 'in_progress' | 'pending' | 'locked', language: string }) {
+  const getStatusLabel = () => {
+    switch (status) {
+      case 'completed': return language === 'ru' ? 'Завершено' : 'Completed';
+      case 'in_progress': return language === 'ru' ? 'В процессе' : 'In Progress';
+      case 'pending': return language === 'ru' ? 'Доступно' : 'Available';
+      case 'locked': return language === 'ru' ? 'Недоступно' : 'Locked';
+    }
+  };
+
+  const getStatusColor = () => {
+    switch (status) {
+      case 'completed': return "text-emerald-600 bg-emerald-50 border-emerald-100";
+      case 'in_progress': return "text-primary bg-primary/5 border-primary/10";
+      case 'pending': return "text-muted-foreground bg-secondary border-transparent";
+      case 'locked': return "text-muted-foreground/40 bg-secondary/50 border-transparent opacity-50";
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-between p-4 rounded-xl border bg-card shadow-sm">
+      <div className="flex items-center gap-3">
+        <div className={cn(
+          "h-2 w-2 rounded-full",
+          status === 'completed' ? "bg-emerald-500" : 
+          status === 'in_progress' ? "bg-primary animate-pulse" : 
+          "bg-muted-foreground/30"
+        )} />
+        <span className={cn("font-medium text-sm", status === 'locked' && "opacity-40")}>{label}</span>
+      </div>
+      <div className={cn("text-[10px] uppercase font-bold px-2 py-1 rounded-md border", getStatusColor())}>
+        {getStatusLabel()}
+      </div>
+    </div>
+  );
+}
+
 function Metric({ label, value, color = "text-foreground" }: any) {
   return (
     <div className="p-4 bg-secondary/30 rounded-xl border space-y-1">
@@ -235,7 +323,7 @@ function ScenarioItem({ title, active }: any) {
       active ? "bg-primary-foreground/10 border-primary-foreground/20" : "bg-primary-foreground/5 border-primary-foreground/10 opacity-50"
     )}>
       <span className="text-sm font-medium">{title}</span>
-      <div className="h-2 w-2 rounded-full bg-primary-foreground/50" />
+      <div className={cn("h-2 w-2 rounded-full", active ? "bg-primary-foreground" : "bg-primary-foreground/30")} />
     </div>
   );
 }

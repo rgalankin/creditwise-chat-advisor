@@ -34,7 +34,7 @@ export function ChatDashboard() {
       
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {activeTab === 'chat' && <ChatWindow profile={profile} updateProfile={updateProfile} />}
-        {activeTab === 'profile' && <ProfileView profile={profile} updateProfile={updateProfile} />}
+        {activeTab === 'profile' && <ProfileView profile={profile} updateProfile={updateProfile} onStartChat={() => setActiveTab('chat')} />}
         {activeTab === 'documents' && <DocumentsView />}
         {activeTab === 'admin' && isAdmin && <AdminPanel />}
         {activeTab === 'pricing' && <PricingPage />}

@@ -104,7 +104,7 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
 
     try {
       const sessions = await (blink.db as any).chatSessions.list({ 
-        where: { userId: profile.userId },
+        where: { userId: profile?.userId },
         orderBy: { createdAt: 'desc' },
         limit: 1
       });
@@ -113,13 +113,13 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
       
       if (!activeSession) {
         activeSession = await (blink.db as any).chatSessions.create({
-          userId: profile.userId,
+          userId: profile?.userId,
           title: language === 'ru' ? 'Первичная диагностика' : 'Initial Diagnostic'
         });
         
         const greeting = {
           sessionId: activeSession.id,
-          userId: profile.userId,
+          userId: profile?.userId,
           role: 'assistant',
           content: getInitialMessage('INTRO'),
           metadata: JSON.stringify({ state: 'INTRO' })
@@ -383,7 +383,7 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
           const summaryPrompt = `Based on these diagnostic answers, generate a concise financial situation summary, risks (3 points), and first steps (3 points).
           
           Answers: ${JSON.stringify(updatedData)}
-          Jurisdiction: ${profile.jurisdiction}
+          Jurisdiction: ${profile?.jurisdiction || 'Unknown'}
           
           Format it professionally as the Credo-Service Advisor.`;
           
@@ -411,7 +411,7 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
       setIsLoading(true);
       try {
         const systemPrompt = `You are the Credo-Service Advisor.
-        User Context: ${profile.jurisdiction || 'Unknown'}, Financial Data: ${JSON.stringify(diagnosticData)}.
+        User Context: ${profile?.jurisdiction || 'Unknown'}, Financial Data: ${JSON.stringify(diagnosticData)}.
         Respond as a professional, unbiased advisor.`;
 
         let fullResponse = '';
@@ -432,7 +432,7 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
 
         const finalBotMsg = await (blink.db as any).chatMessages.create({
           sessionId: session.id,
-          userId: profile.userId,
+          userId: profile?.userId,
           role: 'assistant',
           content: fullResponse,
           metadata: JSON.stringify({ state: chatState, diagnosticData })
@@ -509,7 +509,7 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
     if (!session || !profile) return;
     toast.info(language === 'ru' ? `Анализ ${file.name}...` : `Analyzing ${file.name}...`);
     try {
-      const { publicUrl } = await blink.storage.upload(file, `docs/${profile.userId}/${Date.now()}_${file.name}`);
+      const { publicUrl } = await blink.storage.upload(file, `docs/${profile?.userId || 'guest'}/${Date.now()}_${file.name}`);
       const analysisPrompt = `Extract key financial data from this document. Document: ${file.name}`;
       const { text } = await blink.ai.generateText({
         messages: [
@@ -517,7 +517,7 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
           { role: 'user', content: [{ type: 'text', text: analysisPrompt }, { type: 'image', image: publicUrl }]}
         ]
       });
-      await (blink.db as any).userDocuments.create({ userId: profile.userId, name: file.name, url: publicUrl, extractedData: text });
+      await (blink.db as any).userDocuments.create({ userId: profile?.userId, name: file.name, url: publicUrl, extractedData: text });
       const botMsg = await (blink.db as any).chatMessages.create({
         sessionId: session.id,
         userId: profile.userId,

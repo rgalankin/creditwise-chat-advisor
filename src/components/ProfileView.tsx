@@ -48,7 +48,7 @@ export function ProfileView({ profile, updateProfile, onStartChat, isGuestMode =
       return;
     }
     try {
-      await updateProfile({ hasConsent: Number(profile.hasConsent) > 0 ? "0" : "1" });
+      await updateProfile({ hasConsent: Number(profile?.hasConsent || 0) > 0 ? "0" : "1" });
       toast.success(language === 'ru' ? 'Статус согласия изменен' : 'Consent status updated');
     } catch (error) {
       toast.error(language === 'ru' ? 'Ошибка изменения' : 'Failed to update');
@@ -125,7 +125,7 @@ export function ProfileView({ profile, updateProfile, onStartChat, isGuestMode =
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center py-2 border-b">
                   <span className="text-sm text-muted-foreground">{language === 'ru' ? 'Имя' : 'Display Name'}</span>
-                  <span className="text-sm font-medium">{profile.displayName}</span>
+                  <span className="text-sm font-medium">{profile?.displayName || '...'}</span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b">
                   <span className="text-sm text-muted-foreground">{t('credits')}</span>
@@ -135,7 +135,7 @@ export function ProfileView({ profile, updateProfile, onStartChat, isGuestMode =
                   <span className="text-sm text-muted-foreground">{language === 'ru' ? 'Дата регистрации' : 'Joined'}</span>
                   <span className="text-sm font-medium flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
-                    {new Date(profile.createdAt).toLocaleDateString()}
+                    {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : '...'}
                   </span>
                 </div>
               </CardContent>
@@ -172,7 +172,7 @@ export function ProfileView({ profile, updateProfile, onStartChat, isGuestMode =
 
           <Card className={cn(
             "border-2 transition-colors shadow-none bg-card",
-            Number(profile.hasConsent) > 0 ? "border-emerald-500/20" : "border-amber-500/20"
+            Number(profile?.hasConsent || 0) > 0 ? "border-emerald-500/20" : "border-amber-500/20"
           )}>
             <CardContent className="pt-6">
               <div className="flex flex-col md:flex-row gap-6 items-center justify-between">
@@ -180,7 +180,7 @@ export function ProfileView({ profile, updateProfile, onStartChat, isGuestMode =
                   <div className="flex items-center gap-2 justify-center md:justify-start">
                     <Shield className={cn(
                       "h-5 w-5",
-                      Number(profile.hasConsent) > 0 ? "text-emerald-500" : "text-amber-500"
+                      Number(profile?.hasConsent || 0) > 0 ? "text-emerald-500" : "text-amber-500"
                     )} />
                     <h3 className="font-bold">{language === 'ru' ? 'Согласие на обработку данных' : 'Data Processing Consent'}</h3>
                   </div>
@@ -192,13 +192,13 @@ export function ProfileView({ profile, updateProfile, onStartChat, isGuestMode =
                 </div>
                 <Button 
                   onClick={toggleConsent}
-                  variant={Number(profile.hasConsent) > 0 ? "outline" : "default"}
+                  variant={Number(profile?.hasConsent || 0) > 0 ? "outline" : "default"}
                   className={cn(
                     "w-full md:w-auto font-bold",
-                    Number(profile.hasConsent) > 0 ? "border-emerald-500/50 text-emerald-500 hover:bg-emerald-500/10" : ""
+                    Number(profile?.hasConsent || 0) > 0 ? "border-emerald-500/50 text-emerald-500 hover:bg-emerald-500/10" : ""
                   )}
                 >
-                  {Number(profile.hasConsent) > 0 
+                  {Number(profile?.hasConsent || 0) > 0 
                     ? (language === 'ru' ? 'Отозвать' : 'Revoke') 
                     : (language === 'ru' ? 'Предоставить' : 'Grant')}
                 </Button>

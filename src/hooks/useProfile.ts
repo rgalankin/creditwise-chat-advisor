@@ -9,6 +9,13 @@ export function useProfile() {
     try {
       const user = await blink.auth.me();
       if (!user) {
+        setProfile({
+          displayName: 'Guest',
+          jurisdiction: 'Russia',
+          hasConsent: "0",
+          financialData: null,
+          createdAt: new Date().toISOString()
+        });
         setLoading(false);
         return;
       }
@@ -34,7 +41,7 @@ export function useProfile() {
   };
 
   const updateProfile = async (data: any) => {
-    if (!profile) return;
+    if (!profile || profile.displayName === 'Guest') return;
     try {
       const updated = await blink.db.userProfiles.update(profile.id, data);
       setProfile(updated);

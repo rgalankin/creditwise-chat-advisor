@@ -146,7 +146,7 @@ export function ChatWindow({ profile, updateProfile, isGuestMode = false, onLogi
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {profile.jurisdiction && (
+          {profile?.jurisdiction && (
             <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/5 rounded-md text-xs font-bold text-primary border border-primary/10">
               <Globe className="h-3 w-3" />
               {profile.jurisdiction}

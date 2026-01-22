@@ -93,6 +93,23 @@ export function useProfile() {
 
   useEffect(() => {
     fetchProfile();
+
+    // Add a timeout to ensure loading doesn't hang indefinitely
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.warn('Profile loading timeout, falling back to guest profile');
+        setProfile({
+          displayName: 'Guest',
+          jurisdiction: 'Russia',
+          hasConsent: "0",
+          financialData: null,
+          createdAt: new Date().toISOString()
+        });
+        setLoading(false);
+      }
+    }, 5000); // 5 second timeout
+
+    return () => clearTimeout(timeout);
   }, []);
 
   return { profile, loading, updateProfile, refreshProfile: fetchProfile };

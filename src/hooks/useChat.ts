@@ -7,10 +7,9 @@ import { chatApi, isN8nMode, initChatMode, ChatResponse } from '../lib/chatApi';
 
 const GUEST_SESSION_KEY = 'creditwise_guest_session';
 
-export type ChatState = 
-  | 'INTRO' 
-  | 'CONSENT' 
-  | 'JURISDICTION' 
+export type ChatState =
+  | 'INTRO'
+  | 'CONSENT'
   | 'DIAGNOSTIC_1' 
   | 'DIAGNOSTIC_2' 
   | 'DIAGNOSTIC_3' 
@@ -50,11 +49,9 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
   const getInitialMessage = useCallback((state: ChatState) => {
     switch (state) {
       case 'INTRO':
-        return "Здравствуйте! Я ваш Советник CreditWise. Я здесь, чтобы помочь вам управлять вашим финансовым положением с полной автономией.\n\nПрежде чем мы начнем, в какой стране или регионе вы находитесь? Мои рекомендации в значительной степени зависят от местных финансовых правил.";
+        return "Здравствуйте! Я ваш Советник CreditWise. Я здесь, чтобы помочь вам управлять вашим финансовым положением с полной автономией в соответствии с законодательством Российской Федерации.";
       case 'CONSENT':
         return "Чтобы продолжить, необходимо согласие на обработку данных. Информация используется только для подготовки рекомендаций.";
-      case 'JURISDICTION':
-        return "В какой стране вы находитесь? Рекомендации зависят от местных правил.";
       default:
         return "";
     }
@@ -391,16 +388,13 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
       responseText = getInitialMessage('CONSENT');
     } else if (chatState === 'CONSENT') {
       if (content.toLowerCase().includes('согласен') || content.toLowerCase().includes('да') || content.toLowerCase().includes('agree') || content.toLowerCase().includes('yes')) {
-        nextState = 'JURISDICTION';
-        responseText = getInitialMessage('JURISDICTION');
+        const qObj = getDiagnosticQuestion(1);
+        nextState = 'DIAGNOSTIC_1';
+        responseText = qObj.q;
       } else {
         nextState = 'INTRO';
         responseText = "Для продолжения необходимо ваше согласие.";
       }
-    } else if (chatState === 'JURISDICTION') {
-      const qObj = getDiagnosticQuestion(1);
-      nextState = 'DIAGNOSTIC_1';
-      responseText = qObj.q;
     } else if (chatState.startsWith('DIAGNOSTIC_')) {
       const currentStep = parseInt(chatState.split('_')[1]);
       const nextStep = currentStep + 1;
@@ -510,15 +504,12 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
       await moveToState('CONSENT', getInitialMessage('CONSENT'));
     } else if (chatState === 'CONSENT') {
       if (content.toLowerCase().includes('согласен') || content.toLowerCase().includes('да') || content.toLowerCase().includes('agree') || content.toLowerCase().includes('yes')) {
-        await updateProfile({ hasConsent: 1 });
-        await moveToState('JURISDICTION', getInitialMessage('JURISDICTION'));
+        await updateProfile({ hasConsent: 1, jurisdiction: 'Russia' });
+        const qObj = getDiagnosticQuestion(1);
+        await moveToState('DIAGNOSTIC_1', qObj.q);
       } else {
         await moveToState('INTRO', "Для продолжения необходимо ваше согласие.");
       }
-    } else if (chatState === 'JURISDICTION') {
-      await updateProfile({ jurisdiction: content });
-      const qObj = getDiagnosticQuestion(1);
-      await moveToState('DIAGNOSTIC_1', qObj.q);
     } else if (chatState.startsWith('DIAGNOSTIC_')) {
       const currentStep = parseInt(chatState.split('_')[1]);
       const nextStep = currentStep + 1;

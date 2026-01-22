@@ -59,10 +59,9 @@ export function ChatWindow({ profile, updateProfile, isGuestMode = false, onLogi
   const getProgressValue = () => {
     if (chatState === 'INTRO') return 0;
     if (chatState === 'CONSENT') return 10;
-    if (chatState === 'JURISDICTION') return 20;
     if (chatState.startsWith('DIAGNOSTIC_')) {
       const step = parseInt(chatState.split('_')[1]);
-      return 20 + (step * 10);
+      return 10 + (step * 10);
     }
     if (chatState === 'SUMMARY') return 95;
     return 100;
@@ -131,7 +130,7 @@ export function ChatWindow({ profile, updateProfile, isGuestMode = false, onLogi
           <div className="flex flex-col">
             <h2 className="font-bold text-sm">Кредитный советник</h2>
             <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground uppercase tracking-wider font-bold">
-              <span className={cn(chatState === 'INTRO' || chatState === 'CONSENT' || chatState === 'JURISDICTION' ? "text-primary" : "")}>
+              <span className={cn(chatState === 'INTRO' || chatState === 'CONSENT' ? "text-primary" : "")}>
                 Регион
               </span>
               <span>/</span>

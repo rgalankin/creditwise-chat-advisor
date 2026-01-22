@@ -35,10 +35,9 @@ export type UIComponentType =
   | 'document_upload';   // Загрузка документа
 
 /** Состояние FSM в n8n */
-export type ChatState = 
-  | 'INTRO' 
-  | 'CONSENT' 
-  | 'JURISDICTION' 
+export type ChatState =
+  | 'INTRO'
+  | 'CONSENT'
   | 'DIAGNOSTIC_1' | 'DIAGNOSTIC_2' | 'DIAGNOSTIC_3' 
   | 'DIAGNOSTIC_4' | 'DIAGNOSTIC_5' | 'DIAGNOSTIC_6' | 'DIAGNOSTIC_7'
   | 'SUMMARY' 

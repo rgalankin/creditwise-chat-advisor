@@ -290,7 +290,6 @@ async function handler(req: Request): Promise<Response> {
         // Логируем событие по типу действия
         const eventMap: Record<string, string> = {
           "consent_given": "consent_given",
-          "jurisdiction_set": "jurisdiction_set",
           "diagnostic_answer": "diagnostic_step",
           "scenario_select": "scenario_started",
           "scenario_step": "scenario_step",

@@ -208,24 +208,33 @@ async function handler(req: Request): Promise<Response> {
       }
 
       case "message": {
+        console.log(`[chat-proxy] Processing message endpoint with sessionId: ${data.sessionId}`);
+
         // Отправить сообщение
         if (!data.sessionId || !data.content) {
           return errorResponse("Missing sessionId or content", "INVALID_REQUEST");
         }
-        
+
+        console.log(`[chat-proxy] Calling n8n with config:`, {
+          webhookUrl: n8nConfig.webhookUrl,
+          hasSecret: !!n8nConfig.secretKey
+        });
+
         const result = await callN8n(n8nConfig, "message", {
           sessionId: data.sessionId,
           content: data.content,
           language: data.language || "ru",
           attachments: data.attachments,
         }, userId);
-        
+
+        console.log(`[chat-proxy] n8n response:`, result);
+
         // Логируем AI вызов
         await logEvent(blink, userId, "ai_call", {
           sessionId: data.sessionId,
           state: result.state,
         });
-        
+
         return jsonResponse(result);
       }
 

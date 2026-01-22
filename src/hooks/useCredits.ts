@@ -22,12 +22,23 @@ export const useCredits = () => {
       });
 
       if (!records || records.length === 0) {
-        // Initialize with 100 free credits
-        await (blink.db as any).userCredits.create({
-          userId: user.id,
-          credits: 100
-        });
-        setCredits(100);
+        // Initialize with 100 free credits using upsert to avoid race conditions
+        try {
+          await (blink.db as any).userCredits.upsert({
+            userId: user.id,
+            credits: 100
+          });
+          setCredits(100);
+        } catch {
+          // If upsert also fails, try fetching again (record may exist now)
+          const retryRecords = await (blink.db as any).userCredits.list({
+            where: { userId: user.id },
+            limit: 1
+          });
+          if (retryRecords && retryRecords.length > 0) {
+            setCredits(Number(retryRecords[0].credits));
+          }
+        }
       } else {
         setCredits(Number(records[0].credits));
       }

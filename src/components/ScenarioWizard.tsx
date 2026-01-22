@@ -27,12 +27,9 @@ interface ScenarioWizardProps {
 interface WizardStep {
   id: string;
   titleRu: string;
-  titleEn: string;
   questionRu: string;
-  questionEn: string;
   type: 'options' | 'text' | 'voice' | 'mixed';
   optionsRu?: string[];
-  optionsEn?: string[];
 }
 
 export interface ScenarioResult {
@@ -47,59 +44,58 @@ export interface ScenarioResult {
 // Scenario-specific wizard steps
 const scenarioSteps: Record<ScenarioType, WizardStep[]> = {
   credit: [
-    { id: 'goal', titleRu: 'Цель кредита', titleEn: 'Loan Purpose', questionRu: 'Для чего нужен кредит?', questionEn: 'What do you need the loan for?', type: 'options', optionsRu: ['Покупка авто', 'Ремонт', 'Медицина', 'Образование', 'Бизнес', 'Другое'], optionsEn: ['Car purchase', 'Renovation', 'Medical', 'Education', 'Business', 'Other'] },
-    { id: 'amount', titleRu: 'Сумма', titleEn: 'Amount', questionRu: 'Какая сумма вам нужна?', questionEn: 'What amount do you need?', type: 'options', optionsRu: ['до 100к', '100-300к', '300-500к', '500к-1М', '1М+'], optionsEn: ['up to 100k', '100-300k', '300-500k', '500k-1M', '1M+'] },
-    { id: 'income', titleRu: 'Доход', titleEn: 'Income', questionRu: 'Ваш ежемесячный доход?', questionEn: 'Your monthly income?', type: 'options', optionsRu: ['до 50к', '50-100к', '100-200к', '200к+'], optionsEn: ['up to 50k', '50-100k', '100-200k', '200k+'] },
-    { id: 'employment', titleRu: 'Занятость', titleEn: 'Employment', questionRu: 'Ваш тип занятости?', questionEn: 'Your employment type?', type: 'options', optionsRu: ['Официальная работа', 'ИП/Самозанятый', 'Неофициально', 'Безработный'], optionsEn: ['Official employment', 'Self-employed', 'Unofficial', 'Unemployed'] },
-    { id: 'details', titleRu: 'Детали', titleEn: 'Details', questionRu: 'Что ещё важно знать о вашей ситуации?', questionEn: 'What else is important about your situation?', type: 'mixed' }
+    { id: 'goal', titleRu: 'Цель кредита', questionRu: 'Для чего нужен кредит?', type: 'options', optionsRu: ['Покупка авто', 'Ремонт', 'Медицина', 'Образование', 'Бизнес', 'Другое'] },
+    { id: 'amount', titleRu: 'Сумма', questionRu: 'Какая сумма вам нужна?', type: 'options', optionsRu: ['до 100к', '100-300к', '300-500к', '500к-1М', '1М+'] },
+    { id: 'income', titleRu: 'Доход', questionRu: 'Ваш ежемесячный доход?', type: 'options', optionsRu: ['до 50к', '50-100к', '100-200к', '200к+'] },
+    { id: 'employment', titleRu: 'Занятость', questionRu: 'Ваш тип занятости?', type: 'options', optionsRu: ['Официальная работа', 'ИП/Самозанятый', 'Неофициально', 'Безработный'] },
+    { id: 'details', titleRu: 'Детали', questionRu: 'Что ещё важно знать о вашей ситуации?', type: 'mixed' }
   ],
   refinance: [
-    { id: 'currentLoans', titleRu: 'Текущие кредиты', titleEn: 'Current Loans', questionRu: 'Сколько у вас действующих кредитов?', questionEn: 'How many active loans do you have?', type: 'options', optionsRu: ['1', '2-3', '4-5', '6+'], optionsEn: ['1', '2-3', '4-5', '6+'] },
-    { id: 'totalDebt', titleRu: 'Общий долг', titleEn: 'Total Debt', questionRu: 'Общая сумма задолженности?', questionEn: 'Total debt amount?', type: 'options', optionsRu: ['до 100к', '100-300к', '300-500к', '500к-1М', '1М+'], optionsEn: ['up to 100k', '100-300k', '300-500k', '500k-1M', '1M+'] },
-    { id: 'monthlyPayment', titleRu: 'Платёж', titleEn: 'Payment', questionRu: 'Текущий ежемесячный платёж?', questionEn: 'Current monthly payment?', type: 'options', optionsRu: ['до 10к', '10-30к', '30-50к', '50-100к', '100к+'], optionsEn: ['up to 10k', '10-30k', '30-50k', '50-100k', '100k+'] },
-    { id: 'details', titleRu: 'Детали', titleEn: 'Details', questionRu: 'Расскажите подробнее о целях рефинансирования', questionEn: 'Tell us more about your refinancing goals', type: 'mixed' }
+    { id: 'currentLoans', titleRu: 'Текущие кредиты', questionRu: 'Сколько у вас действующих кредитов?', type: 'options', optionsRu: ['1', '2-3', '4-5', '6+'] },
+    { id: 'totalDebt', titleRu: 'Общий долг', questionRu: 'Общая сумма задолженности?', type: 'options', optionsRu: ['до 100к', '100-300к', '300-500к', '500к-1М', '1М+'] },
+    { id: 'monthlyPayment', titleRu: 'Платёж', questionRu: 'Текущий ежемесячный платёж?', type: 'options', optionsRu: ['до 10к', '10-30к', '30-50к', '50-100к', '100к+'] },
+    { id: 'details', titleRu: 'Детали', questionRu: 'Расскажите подробнее о целях рефинансирования', type: 'mixed' }
   ],
   debtPlan: [
-    { id: 'debtType', titleRu: 'Тип долгов', titleEn: 'Debt Type', questionRu: 'Какие у вас долги?', questionEn: 'What debts do you have?', type: 'options', optionsRu: ['Кредиты', 'Микрозаймы', 'Кредитные карты', 'Долги физлицам', 'Смешанные'], optionsEn: ['Loans', 'Microloans', 'Credit cards', 'Personal debts', 'Mixed'] },
-    { id: 'overdue', titleRu: 'Просрочки', titleEn: 'Overdue', questionRu: 'Есть просроченные платежи?', questionEn: 'Are there overdue payments?', type: 'options', optionsRu: ['Нет', 'До 30 дней', '30-90 дней', '90+ дней'], optionsEn: ['No', 'Up to 30 days', '30-90 days', '90+ days'] },
-    { id: 'collectors', titleRu: 'Коллекторы', titleEn: 'Collectors', questionRu: 'Звонят коллекторы?', questionEn: 'Are collectors calling?', type: 'options', optionsRu: ['Нет', 'Иногда', 'Часто', 'Постоянно'], optionsEn: ['No', 'Sometimes', 'Often', 'Constantly'] },
-    { id: 'income', titleRu: 'Доход', titleEn: 'Income', questionRu: 'Сколько можете выделять на погашение?', questionEn: 'How much can you allocate for repayment?', type: 'options', optionsRu: ['до 10к', '10-20к', '20-40к', '40к+'], optionsEn: ['up to 10k', '10-20k', '20-40k', '40k+'] },
-    { id: 'priority', titleRu: 'Приоритет', titleEn: 'Priority', questionRu: 'Что важнее: скорость или комфорт?', questionEn: 'What matters more: speed or comfort?', type: 'options', optionsRu: ['Погасить быстрее', 'Платить меньше', 'Баланс'], optionsEn: ['Pay off faster', 'Pay less', 'Balance'] },
-    { id: 'details', titleRu: 'Детали', titleEn: 'Details', questionRu: 'Что ещё важно учесть?', questionEn: 'What else is important?', type: 'mixed' }
+    { id: 'debtType', titleRu: 'Тип долгов', questionRu: 'Какие у вас долги?', type: 'options', optionsRu: ['Кредиты', 'Микрозаймы', 'Кредитные карты', 'Долги физлицам', 'Смешанные'] },
+    { id: 'overdue', titleRu: 'Просрочки', questionRu: 'Есть просроченные платежи?', type: 'options', optionsRu: ['Нет', 'До 30 дней', '30-90 дней', '90+ дней'] },
+    { id: 'collectors', titleRu: 'Коллекторы', questionRu: 'Звонят коллекторы?', type: 'options', optionsRu: ['Нет', 'Иногда', 'Часто', 'Постоянно'] },
+    { id: 'income', titleRu: 'Доход', questionRu: 'Сколько можете выделять на погашение?', type: 'options', optionsRu: ['до 10к', '10-20к', '20-40к', '40к+'] },
+    { id: 'priority', titleRu: 'Приоритет', questionRu: 'Что важнее: скорость или комфорт?', type: 'options', optionsRu: ['Погасить быстрее', 'Платить меньше', 'Баланс'] },
+    { id: 'details', titleRu: 'Детали', questionRu: 'Что ещё важно учесть?', type: 'mixed' }
   ],
   improveHistory: [
-    { id: 'currentScore', titleRu: 'Текущий рейтинг', titleEn: 'Current Score', questionRu: 'Как вы оцениваете свою КИ?', questionEn: 'How do you rate your credit history?', type: 'options', optionsRu: ['Хорошая', 'Средняя', 'Плохая', 'Очень плохая', 'Не знаю'], optionsEn: ['Good', 'Average', 'Bad', 'Very bad', "Don't know"] },
-    { id: 'negativeFactors', titleRu: 'Негатив', titleEn: 'Negatives', questionRu: 'Какие негативные факторы есть?', questionEn: 'What negative factors are there?', type: 'options', optionsRu: ['Просрочки', 'Много запросов', 'Судебные решения', 'Банкротство', 'Не знаю'], optionsEn: ['Delinquencies', 'Many inquiries', 'Court decisions', 'Bankruptcy', "Don't know"] },
-    { id: 'goal', titleRu: 'Цель', titleEn: 'Goal', questionRu: 'Зачем улучшать КИ?', questionEn: 'Why improve credit history?', type: 'options', optionsRu: ['Получить кредит', 'Снизить ставку', 'Ипотека', 'Просто улучшить'], optionsEn: ['Get a loan', 'Lower rate', 'Mortgage', 'Just improve'] },
-    { id: 'timeline', titleRu: 'Срок', titleEn: 'Timeline', questionRu: 'За какой срок хотите улучшить?', questionEn: 'In what timeframe?', type: 'options', optionsRu: ['1-3 месяца', '3-6 месяцев', '6-12 месяцев', 'Год+'], optionsEn: ['1-3 months', '3-6 months', '6-12 months', 'Year+'] },
-    { id: 'details', titleRu: 'Детали', titleEn: 'Details', questionRu: 'Расскажите подробнее о ситуации', questionEn: 'Tell us more about your situation', type: 'mixed' }
+    { id: 'currentScore', titleRu: 'Текущий рейтинг', questionRu: 'Как вы оцениваете свою КИ?', type: 'options', optionsRu: ['Хорошая', 'Средняя', 'Плохая', 'Очень плохая', 'Не знаю'] },
+    { id: 'negativeFactors', titleRu: 'Негатив', questionRu: 'Какие негативные факторы есть?', type: 'options', optionsRu: ['Просрочки', 'Много запросов', 'Судебные решения', 'Банкротство', 'Не знаю'] },
+    { id: 'goal', titleRu: 'Цель', questionRu: 'Зачем улучшать КИ?', type: 'options', optionsRu: ['Получить кредит', 'Снизить ставку', 'Ипотека', 'Просто улучшить'] },
+    { id: 'timeline', titleRu: 'Срок', questionRu: 'За какой срок хотите улучшить?', type: 'options', optionsRu: ['1-3 месяца', '3-6 месяцев', '6-12 месяцев', 'Год+'] },
+    { id: 'details', titleRu: 'Детали', questionRu: 'Расскажите подробнее о ситуации', type: 'mixed' }
   ],
   insuranceReturn: [
-    { id: 'insuranceType', titleRu: 'Тип страховки', titleEn: 'Insurance Type', questionRu: 'Какую страховку хотите вернуть?', questionEn: 'What insurance do you want to return?', type: 'options', optionsRu: ['Страхование жизни', 'От потери работы', 'Имущества', 'Другое'], optionsEn: ['Life insurance', 'Job loss', 'Property', 'Other'] },
-    { id: 'when', titleRu: 'Когда оформили', titleEn: 'When', questionRu: 'Когда была оформлена?', questionEn: 'When was it issued?', type: 'options', optionsRu: ['До 14 дней', '14 дней - 1 мес', '1-6 месяцев', '6+ месяцев'], optionsEn: ['Up to 14 days', '14 days - 1 mo', '1-6 months', '6+ months'] },
-    { id: 'amount', titleRu: 'Сумма', titleEn: 'Amount', questionRu: 'Сумма страховки?', questionEn: 'Insurance amount?', type: 'options', optionsRu: ['до 10к', '10-30к', '30-50к', '50-100к', '100к+'], optionsEn: ['up to 10k', '10-30k', '30-50k', '50-100k', '100k+'] },
-    { id: 'details', titleRu: 'Детали', titleEn: 'Details', questionRu: 'Как была навязана страховка?', questionEn: 'How was the insurance imposed?', type: 'mixed' }
+    { id: 'insuranceType', titleRu: 'Тип страховки', questionRu: 'Какую страховку хотите вернуть?', type: 'options', optionsRu: ['Страхование жизни', 'От потери работы', 'Имущества', 'Другое'] },
+    { id: 'when', titleRu: 'Когда оформили', questionRu: 'Когда была оформлена?', type: 'options', optionsRu: ['До 14 дней', '14 дней - 1 мес', '1-6 месяцев', '6+ месяцев'] },
+    { id: 'amount', titleRu: 'Сумма', questionRu: 'Сумма страховки?', type: 'options', optionsRu: ['до 10к', '10-30к', '30-50к', '50-100к', '100к+'] },
+    { id: 'details', titleRu: 'Детали', questionRu: 'Как была навязана страховка?', type: 'mixed' }
   ],
   bankruptcy: [
-    { id: 'totalDebt', titleRu: 'Общий долг', titleEn: 'Total Debt', questionRu: 'Общая сумма долгов?', questionEn: 'Total debt amount?', type: 'options', optionsRu: ['до 500к', '500к-1М', '1-3М', '3М+'], optionsEn: ['up to 500k', '500k-1M', '1-3M', '3M+'] },
-    { id: 'property', titleRu: 'Имущество', titleEn: 'Property', questionRu: 'Есть ли имущество?', questionEn: 'Do you have property?', type: 'options', optionsRu: ['Нет', 'Авто', 'Недвижимость', 'И то и другое'], optionsEn: ['No', 'Car', 'Real estate', 'Both'] },
-    { id: 'income', titleRu: 'Доход', titleEn: 'Income', questionRu: 'Официальный доход?', questionEn: 'Official income?', type: 'options', optionsRu: ['Нет', 'до 50к', '50-100к', '100к+'], optionsEn: ['No', 'up to 50k', '50-100k', '100k+'] },
-    { id: 'previousAttempts', titleRu: 'Попытки', titleEn: 'Attempts', questionRu: 'Пробовали договориться с кредиторами?', questionEn: 'Tried to negotiate with creditors?', type: 'options', optionsRu: ['Нет', 'Да, отказали', 'Да, частично'], optionsEn: ['No', 'Yes, refused', 'Yes, partially'] },
-    { id: 'details', titleRu: 'Детали', titleEn: 'Details', questionRu: 'Опишите вашу ситуацию', questionEn: 'Describe your situation', type: 'mixed' }
+    { id: 'totalDebt', titleRu: 'Общий долг', questionRu: 'Общая сумма долгов?', type: 'options', optionsRu: ['до 500к', '500к-1М', '1-3М', '3М+'] },
+    { id: 'property', titleRu: 'Имущество', questionRu: 'Есть ли имущество?', type: 'options', optionsRu: ['Нет', 'Авто', 'Недвижимость', 'И то и другое'] },
+    { id: 'income', titleRu: 'Доход', questionRu: 'Официальный доход?', type: 'options', optionsRu: ['Нет', 'до 50к', '50-100к', '100к+'] },
+    { id: 'previousAttempts', titleRu: 'Попытки', questionRu: 'Пробовали договориться с кредиторами?', type: 'options', optionsRu: ['Нет', 'Да, отказали', 'Да, частично'] },
+    { id: 'details', titleRu: 'Детали', questionRu: 'Опишите вашу ситуацию', type: 'mixed' }
   ]
 };
 
-const scenarioTitles: Record<ScenarioType, { ru: string; en: string }> = {
-  credit: { ru: 'Получение кредита', en: 'Get a Loan' },
-  refinance: { ru: 'Рефинансирование', en: 'Refinancing' },
-  debtPlan: { ru: 'План выхода из долгов', en: 'Debt Recovery Plan' },
-  improveHistory: { ru: 'Улучшение кредитной истории', en: 'Improve Credit History' },
-  insuranceReturn: { ru: 'Возврат страхования', en: 'Insurance Return' },
-  bankruptcy: { ru: 'Банкротство', en: 'Bankruptcy' }
+const scenarioTitles: Record<ScenarioType, { ru: string }> = {
+  credit: { ru: 'Получение кредита' },
+  refinance: { ru: 'Рефинансирование' },
+  debtPlan: { ru: 'План выхода из долгов' },
+  improveHistory: { ru: 'Улучшение кредитной истории' },
+  insuranceReturn: { ru: 'Возврат страхования' },
+  bankruptcy: { ru: 'Банкротство' }
 };
 
 export function ScenarioWizard({ scenario, onComplete, onBack, profile, isGuestMode = false, onLogin }: ScenarioWizardProps) {
-  const { language } = useLanguage();
   const steps = scenarioSteps[scenario];
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -139,11 +135,7 @@ export function ScenarioWizard({ scenario, onComplete, onBack, profile, isGuestM
 
   const generateResult = useCallback(async () => {
     if (isGuestMode) {
-      toast.info(
-        language === 'ru' 
-          ? 'Пожалуйста, войдите в систему, чтобы получить результат анализа' 
-          : 'Please log in to receive the analysis result'
-      );
+      toast.info('Пожалуйста, войдите в систему, чтобы получить результат анализа');
       if (onLogin) onLogin();
       return;
     }
@@ -152,13 +144,13 @@ export function ScenarioWizard({ scenario, onComplete, onBack, profile, isGuestM
     try {
       const finalAnswers = { ...answers, [currentStepData.id]: textInput || answers[currentStepData.id] };
       
-      const prompt = `You are a professional credit advisor. Based on the user's answers for the "${scenarioTitles[scenario][language === 'ru' ? 'ru' : 'en']}" scenario, generate a comprehensive analysis.
+      const prompt = `You are a professional credit advisor. Based on the user's answers for the "${scenarioTitles[scenario].ru}" scenario, generate a comprehensive analysis.
 
 User's jurisdiction: ${profile?.jurisdiction || 'Russia'}
 Scenario: ${scenario}
 Answers: ${JSON.stringify(finalAnswers)}
 
-Generate a response in ${language === 'ru' ? 'Russian' : 'English'} with:
+Generate a response in Russian with:
 1. A concise summary (2-3 sentences)
 2. Exactly 3 key risks
 3. Exactly 3 actionable recommendations
@@ -182,14 +174,14 @@ Format as JSON: { "summary": "...", "risks": ["...", "...", "..."], "recommendat
         parsed = {
           summary: text,
           risks: [
-            language === 'ru' ? 'Требуется детальный анализ' : 'Detailed analysis required',
-            language === 'ru' ? 'Возможны дополнительные расходы' : 'Additional costs possible',
-            language === 'ru' ? 'Сроки могут варьироваться' : 'Timelines may vary'
+            'Требуется детальный анализ',
+            'Возможны дополнительные расходы',
+            'Сроки могут варьироваться'
           ],
           recommendations: [
-            language === 'ru' ? 'Проконсультируйтесь со специалистом' : 'Consult with a specialist',
-            language === 'ru' ? 'Соберите необходимые документы' : 'Gather necessary documents',
-            language === 'ru' ? 'Оцените все варианты' : 'Evaluate all options'
+            'Проконсультируйтесь со специалистом',
+            'Соберите необходимые документы',
+            'Оцените все варианты'
           ]
         };
       }
@@ -205,11 +197,11 @@ Format as JSON: { "summary": "...", "risks": ["...", "...", "..."], "recommendat
       onComplete(result);
     } catch (error) {
       console.error('Generation error:', error);
-      toast.error(language === 'ru' ? 'Ошибка генерации' : 'Generation error');
+      toast.error('Ошибка генерации');
     } finally {
       setIsGenerating(false);
     }
-  }, [answers, currentStepData, textInput, scenario, profile, language, onComplete]);
+  }, [answers, currentStepData, textInput, scenario, profile, onComplete]);
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -221,10 +213,10 @@ Format as JSON: { "summary": "...", "risks": ["...", "...", "..."], "recommendat
           </Button>
           <div className="flex flex-col">
             <h2 className="font-bold text-sm">
-              {scenarioTitles[scenario][language === 'ru' ? 'ru' : 'en']}
+              {scenarioTitles[scenario].ru}
             </h2>
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">
-              {language === 'ru' ? `Шаг ${currentStep + 1} из ${steps.length}` : `Step ${currentStep + 1} of ${steps.length}`}
+              Шаг {currentStep + 1} из {steps.length}
             </p>
           </div>
         </div>
@@ -233,7 +225,7 @@ Format as JSON: { "summary": "...", "risks": ["...", "...", "..."], "recommendat
       {/* Progress */}
       <div className="px-6 py-3 bg-secondary/30 border-b">
         <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">
-          <span>{language === 'ru' ? currentStepData.titleRu : currentStepData.titleEn}</span>
+          <span>{currentStepData.titleRu}</span>
           <span>{Math.round(progress)}%</span>
         </div>
         <Progress value={progress} className="h-1.5" />
@@ -261,14 +253,14 @@ Format as JSON: { "summary": "...", "risks": ["...", "...", "..."], "recommendat
               <Sparkles className="h-8 w-8 text-primary" />
             </div>
             <h1 className="text-xl font-bold mb-2">
-              {language === 'ru' ? currentStepData.questionRu : currentStepData.questionEn}
+              {currentStepData.questionRu}
             </h1>
           </div>
 
           {/* Options */}
           {(currentStepData.type === 'options' || currentStepData.type === 'mixed') && currentStepData.optionsRu && (
             <div className="grid grid-cols-2 gap-3 mb-6">
-              {(language === 'ru' ? currentStepData.optionsRu : currentStepData.optionsEn)?.map((option) => (
+              {currentStepData.optionsRu.map((option) => (
                 <button
                   key={option}
                   onClick={() => handleAnswer(option)}
@@ -292,7 +284,7 @@ Format as JSON: { "summary": "...", "risks": ["...", "...", "..."], "recommendat
                 <textarea
                   value={textInput}
                   onChange={(e) => setTextInput(e.target.value)}
-                  placeholder={language === 'ru' ? 'Или напишите свой вариант...' : 'Or write your answer...'}
+                  placeholder="Или напишите свой вариант..."
                   rows={4}
                   className="w-full p-4 border-2 rounded-xl resize-none focus:border-primary focus:ring-0 focus:outline-none text-sm"
                 />
@@ -313,12 +305,12 @@ Format as JSON: { "summary": "...", "risks": ["...", "...", "..."], "recommendat
                   {isGenerating ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      {language === 'ru' ? 'Анализирую...' : 'Analyzing...'}
+                      Анализирую...
                     </>
                   ) : (
                     <>
                       <CheckCircle2 className="h-4 w-4 mr-2" />
-                      {language === 'ru' ? 'Получить результат' : 'Get Result'}
+                      Получить результат
                     </>
                   )}
                 </Button>
@@ -332,7 +324,7 @@ Format as JSON: { "summary": "...", "risks": ["...", "...", "..."], "recommendat
                   variant="outline"
                   className="w-full h-12 rounded-xl font-bold"
                 >
-                  {language === 'ru' ? 'Далее' : 'Next'}
+                  Далее
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
               )}

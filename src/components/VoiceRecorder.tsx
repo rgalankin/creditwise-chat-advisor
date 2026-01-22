@@ -126,7 +126,7 @@ export function VoiceRecorder({ onResult, className }: VoiceRecorderProps) {
       
     } catch (error) {
       console.error('Microphone error:', error);
-      toast.error(language === 'ru' ? 'Не удалось получить доступ к микрофону' : 'Could not access microphone');
+      toast.error('Не удалось получить доступ к микрофону');
     }
   };
 
@@ -158,18 +158,18 @@ export function VoiceRecorder({ onResult, className }: VoiceRecorderProps) {
         try {
           const { text } = await blink.ai.transcribeAudio({
             audio: base64,
-            language: language === 'ru' ? 'ru' : 'en'
+            language: 'ru'
           });
           
           if (text) {
             onResult(text);
-            toast.success(language === 'ru' ? 'Голос распознан' : 'Voice recognized');
+            toast.success('Голос распознан');
           } else {
-            toast.error(language === 'ru' ? 'Не удалось распознать речь' : 'Could not recognize speech');
+            toast.error('Не удалось распознать речь');
           }
         } catch (error) {
           console.error('Transcription error:', error);
-          toast.error(language === 'ru' ? 'Ошибка распознавания' : 'Recognition error');
+          toast.error('Ошибка распознавания');
         } finally {
           setIsTranscribing(false);
         }
@@ -233,17 +233,17 @@ export function VoiceRecorder({ onResult, className }: VoiceRecorderProps) {
         {isTranscribing ? (
           <>
             <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-            {language === 'ru' ? 'Распознаю...' : 'Recognizing...'}
+            Распознаю...
           </>
         ) : isRecording ? (
           <>
             <Square className="h-5 w-5 mr-2" />
-            {language === 'ru' ? 'Остановить' : 'Stop'}
+            Остановить
           </>
         ) : (
           <>
             <Mic className="h-5 w-5 mr-2" />
-            {language === 'ru' ? 'Записать голос' : 'Record Voice'}
+            Записать голос
           </>
         )}
       </Button>
@@ -251,9 +251,7 @@ export function VoiceRecorder({ onResult, className }: VoiceRecorderProps) {
       {/* Help text */}
       {!isRecording && !isTranscribing && (
         <p className="text-xs text-muted-foreground text-center">
-          {language === 'ru' 
-            ? 'Нажмите для записи голосового сообщения' 
-            : 'Click to record a voice message'}
+          Нажмите для записи голосового сообщения
         </p>
       )}
     </div>

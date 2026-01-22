@@ -15,15 +15,15 @@ interface SidebarProps {
 }
 
 export function Sidebar({ activeTab, setActiveTab, isAdmin, isGuestMode = false, onLogin }: SidebarProps) {
-  const { language, setLanguage, t } = useLanguage();
+  const { language, t } = useLanguage();
   const { credits } = useCredits();
 
   const navItems = [
-    { id: 'chat', label: language === 'ru' ? 'Начать чат' : 'Start Chat', icon: MessageSquare },
-    { id: 'scenarios', label: language === 'ru' ? 'Сценарии' : 'Scenarios', icon: Sparkles },
-    { id: 'profile', label: language === 'ru' ? 'Профиль' : 'Profile', icon: User },
-    { id: 'documents', label: language === 'ru' ? 'Документы' : 'Documents', icon: FileText },
-    { id: 'pricing', label: language === 'ru' ? 'Улучшить' : 'Upgrade', icon: CreditCard },
+    { id: 'chat', label: 'Начать чат', icon: MessageSquare },
+    { id: 'scenarios', label: 'Сценарии', icon: Sparkles },
+    { id: 'profile', label: 'Профиль', icon: User },
+    { id: 'documents', label: 'Документы', icon: FileText },
+    { id: 'pricing', label: 'Улучшить', icon: CreditCard },
   ];
 
   return (
@@ -86,7 +86,7 @@ export function Sidebar({ activeTab, setActiveTab, isAdmin, isGuestMode = false,
               <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center">
                 <Wallet className="w-3.5 h-3.5 text-primary" />
               </div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-primary/70">{language === 'ru' ? 'Баланс' : 'Balance'}</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-primary/70">Баланс</span>
             </div>
             <span className="text-sm font-black text-primary">{credits ?? '...'}</span>
           </div>
@@ -97,15 +97,13 @@ export function Sidebar({ activeTab, setActiveTab, isAdmin, isGuestMode = false,
                 <div className="flex items-center gap-1.5 cursor-help">
                   <Info className="h-3 w-3 text-muted-foreground" />
                   <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider underline decoration-dotted underline-offset-2">
-                    {language === 'ru' ? 'Как списывается?' : 'How it works?'}
+                    Как списывается?
                   </span>
                 </div>
               </TooltipTrigger>
               <TooltipContent side="right" className="bg-card text-foreground border-primary/20 shadow-xl p-3 max-w-[200px]">
                 <p className="text-[10px] font-medium leading-relaxed">
-                  {language === 'ru' 
-                    ? 'Кредиты списываются за этапы анализа и отчёты, а не за простые сообщения.' 
-                    : 'Credits are deducted for analysis stages and reports, not simple messages.'}
+                  Кредиты списываются за этапы анализа и отчёты, а не за простые сообщения.
                 </p>
               </TooltipContent>
             </Tooltip>
@@ -113,15 +111,6 @@ export function Sidebar({ activeTab, setActiveTab, isAdmin, isGuestMode = false,
         </div>
 
         <div className="flex gap-2">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="flex-1 justify-center gap-2 h-10 rounded-xl font-bold border border-transparent hover:border-primary/10 hover:bg-primary/5"
-            onClick={() => setLanguage(language === 'ru' ? 'en' : 'ru')}
-          >
-            <Globe className="h-4 w-4" />
-            {language === 'ru' ? 'EN' : 'RU'}
-          </Button>
           {isGuestMode ? (
             <Button 
               variant="outline" 
@@ -130,7 +119,7 @@ export function Sidebar({ activeTab, setActiveTab, isAdmin, isGuestMode = false,
               onClick={onLogin}
             >
               <LogOut className="h-4 w-4 rotate-180" />
-              {language === 'ru' ? 'Вход' : 'Login'}
+              Войти
             </Button>
           ) : (
             <Button 
@@ -140,7 +129,7 @@ export function Sidebar({ activeTab, setActiveTab, isAdmin, isGuestMode = false,
               onClick={() => blink.auth.logout()}
             >
               <LogOut className="h-4 w-4" />
-              {language === 'ru' ? 'Выход' : 'Exit'}
+              Выход
             </Button>
           )}
         </div>

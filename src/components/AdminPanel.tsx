@@ -6,7 +6,6 @@ import { Input } from './ui/input';
 import { useLanguage } from '../lib/i18n';
 
 export function AdminPanel() {
-  const { language } = useLanguage();
   const [stats, setStats] = useState({
     users: 0,
     chats: 0,
@@ -42,29 +41,29 @@ export function AdminPanel() {
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h1 className="text-3xl font-bold tracking-tight">
-            {language === 'ru' ? 'Панель управления' : 'Admin Dashboard'}
+            Панель управления
           </h1>
           <p className="text-muted-foreground">
-            {language === 'ru' ? 'Обзор активности платформы и статусов пользователей.' : 'Overview of platform activity and user statuses.'}
+            Обзор активности платформы и статусов пользователей.
           </p>
         </div>
         <div className="relative w-64">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder={language === 'ru' ? 'Поиск пользователей...' : 'Search users...'} className="pl-10" />
+          <Input placeholder="Поиск пользователей..." className="pl-10" />
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title={language === 'ru' ? 'Пользователи' : 'Total Users'} value={stats.users} icon={Users} trend="+12%" />
-        <StatCard title={language === 'ru' ? 'Консультации' : 'Active Consultations'} value={stats.chats} icon={MessageSquare} trend="+5%" />
-        <StatCard title={language === 'ru' ? 'Документы' : 'Processed Docs'} value={stats.docs} icon={FileText} trend="+18%" />
-        <StatCard title={language === 'ru' ? 'Удержание' : 'Retention Rate'} value="84%" icon={Activity} trend="+2%" />
+        <StatCard title="Пользователи" value={stats.users} icon={Users} trend="+12%" />
+        <StatCard title="Консультации" value={stats.chats} icon={MessageSquare} trend="+5%" />
+        <StatCard title="Документы" value={stats.docs} icon={FileText} trend="+18%" />
+        <StatCard title="Удержание" value="84%" icon={Activity} trend="+2%" />
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-lg">{language === 'ru' ? 'Недавние пользователи' : 'Recent Users'}</CardTitle>
+            <CardTitle className="text-lg">Недавние пользователи</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -83,7 +82,7 @@ export function AdminPanel() {
                     <p className="text-xs font-medium text-muted-foreground">{new Date(user.createdAt).toLocaleDateString()}</p>
                     <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-600 uppercase mt-1">
                       <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                      {language === 'ru' ? 'Активен' : 'Active'}
+                      Активен
                     </div>
                   </div>
                 </div>
@@ -94,7 +93,7 @@ export function AdminPanel() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">{language === 'ru' ? 'Состояние системы' : 'System Health'}</CardTitle>
+            <CardTitle className="text-lg">Состояние системы</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <HealthItem label="AI Response Time" value="1.2s" status="Optimal" />
@@ -102,7 +101,7 @@ export function AdminPanel() {
             <HealthItem label="DB Load" value="14%" status="Low" />
             <div className="pt-4 border-t border-border/50">
                <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-widest">
-                 {language === 'ru' ? 'Охват юрисдикций' : 'Jurisdiction Coverage'}
+                 Охват юрисдикций
                </p>
                <div className="flex flex-wrap gap-2">
                  <span className="px-2 py-1 bg-secondary rounded text-[10px] font-bold">Russia</span>

@@ -13,49 +13,49 @@ export function PricingPage() {
   const plans = [
     {
       id: 'basic',
-      name: language === 'ru' ? 'Базовый' : 'Basic',
-      desc: language === 'ru' ? 'Для ознакомления' : 'For introduction',
+      name: 'Базовый',
+      desc: 'Для ознакомления',
       price: '0',
       credits: '100',
       features: [
-        language === 'ru' ? 'Диагностика ситуации' : 'Situation diagnostics',
-        language === 'ru' ? 'Первичный план действий' : 'Initial action plan',
-        language === 'ru' ? '100 приветственных кредитов' : '100 welcome credits'
+        'Диагностика ситуации',
+        'Первичный план действий',
+        '100 приветственных кредитов'
       ],
       icon: <Shield className="w-6 h-6 text-slate-400" />,
-      buttonText: language === 'ru' ? 'Текущий план' : 'Current Plan',
+      buttonText: 'Текущий план',
       isCurrent: true
     },
     {
       id: 'pro',
       name: 'Pro',
-      desc: language === 'ru' ? 'Глубокий анализ' : 'Deep analysis',
+      desc: 'Глубокий анализ',
       price: '29',
       credits: '1000',
       features: [
-        language === 'ru' ? 'Глубокий анализ КИ' : 'Deep credit history analysis',
-        language === 'ru' ? 'Анализ всех документов' : 'Document analysis',
-        language === 'ru' ? 'Приоритетные сценарии' : 'Priority scenarios',
-        language === 'ru' ? 'Мониторинг изменений' : 'Monitoring changes'
+        'Глубокий анализ КИ',
+        'Анализ всех документов',
+        'Приоритетные сценарии',
+        'Мониторинг изменений'
       ],
       icon: <Zap className="w-6 h-6 text-primary" />,
-      buttonText: language === 'ru' ? 'Выбрать Pro' : 'Choose Pro',
+      buttonText: 'Выбрать Pro',
       highlight: true
     },
     {
       id: 'unlimited',
       name: 'Business',
-      desc: language === 'ru' ? 'Полное сопровождение' : 'Full support',
+      desc: 'Полное сопровождение',
       price: '99',
       credits: '∞',
       features: [
-        language === 'ru' ? 'Безлимитный AI-чат' : 'Unlimited AI chat',
-        language === 'ru' ? 'Помощь эксперта' : 'Expert assistance',
-        language === 'ru' ? 'Юридические шаблоны' : 'Legal templates',
-        language === 'ru' ? 'Персональный разбор' : 'Personal review'
+        'Безлимитный AI-чат',
+        'Помощь эксперта',
+        'Юридические шаблоны',
+        'Персональный разбор'
       ],
       icon: <Crown className="w-6 h-6 text-accent" />,
-      buttonText: language === 'ru' ? 'Связаться с нами' : 'Contact Us'
+      buttonText: 'Связаться с нами'
     }
   ];
 
@@ -64,12 +64,10 @@ export function PricingPage() {
       <div className="max-w-5xl mx-auto space-y-12">
         <div className="text-center space-y-4">
           <h1 className="text-4xl font-bold tracking-tight text-foreground">
-            {language === 'ru' ? 'Возможности сервиса' : 'Service Features'}
+            Возможности сервиса
           </h1>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            {language === 'ru' 
-              ? 'Дополнительные инструменты для глубокой работы с кредитной историей.'
-              : 'Additional tools for deep work with your credit history.'}
+            Дополнительные инструменты для глубокой работы с кредитной историей.
           </p>
         </div>
 
@@ -80,16 +78,14 @@ export function PricingPage() {
           </div>
           <div className="flex-1 text-center md:text-left space-y-1">
             <h3 className="font-bold text-sm uppercase tracking-widest text-primary">
-              {language === 'ru' ? 'Как списываются кредиты' : 'How credits are spent'}
+              Как списываются кредиты
             </h3>
             <p className="text-sm text-muted-foreground font-medium">
-              {language === 'ru' 
-                ? 'Кредиты списываются за глубокий анализ и отчёты, а не за простые сообщения в чате.' 
-                : 'Credits are deducted for deep analysis and reports, not for simple chat messages.'}
+              Кредиты списываются за глубокий анализ и отчёты, а не за простые сообщения в чате.
             </p>
           </div>
           <div className="flex items-center gap-3 px-4 py-2 bg-card rounded-2xl border shadow-inner">
-             <span className="text-xs font-bold text-muted-foreground">{language === 'ru' ? 'ВАШ БАЛАНС' : 'YOUR BALANCE'}</span>
+             <span className="text-xs font-bold text-muted-foreground">ВАШ БАЛАНС</span>
              <span className="text-xl font-black text-primary">{credits ?? '...'}</span>
           </div>
         </div>
@@ -105,7 +101,7 @@ export function PricingPage() {
             >
               {plan.highlight && (
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-primary text-primary-foreground text-[10px] font-black rounded-full uppercase tracking-[0.2em] shadow-lg shadow-primary/20">
-                  {language === 'ru' ? 'Рекомендуем' : 'Recommended'}
+                  Рекомендуем
                 </div>
               )}
               
@@ -119,7 +115,7 @@ export function PricingPage() {
                 </div>
                 <div className="mt-6 flex items-baseline gap-1">
                   <span className="text-4xl font-black">${plan.price}</span>
-                  <span className="text-muted-foreground font-medium">/{language === 'ru' ? 'мес' : 'mo'}</span>
+                  <span className="text-muted-foreground font-medium">/мес</span>
                 </div>
               </div>
 
@@ -140,9 +136,9 @@ export function PricingPage() {
                 )}
                 onClick={() => {
                   if (plan.id === 'unlimited') {
-                    toast.info(language === 'ru' ? 'Перенаправляем в поддержку...' : 'Redirecting to support...');
+                    toast.info('Перенаправляем в поддержку...');
                   } else if (!plan.isCurrent) {
-                    toast.info(language === 'ru' ? 'Функция оплаты в демо-режиме отключена' : 'Payment disabled in demo mode');
+                    toast.info('Функция оплаты в демо-режиме отключена');
                   }
                 }}
               >
@@ -156,11 +152,9 @@ export function PricingPage() {
         <div className="p-6 bg-amber-50 border border-amber-100 rounded-3xl flex gap-4 text-amber-800 shadow-sm">
           <AlertCircle className="h-6 w-6 shrink-0" />
           <div className="space-y-1">
-            <h4 className="font-bold text-sm uppercase tracking-widest">{language === 'ru' ? 'Демо-режим' : 'Demo Mode'}</h4>
+            <h4 className="font-bold text-sm uppercase tracking-widest">Демо-режим</h4>
             <p className="text-xs font-medium leading-relaxed opacity-80">
-              {language === 'ru' 
-                ? 'В данной версии покупка планов невозможна. Вы можете протестировать основной функционал в чате бесплатно.' 
-                : 'In this version, purchasing plans is not possible. You can test the core functionality in the chat for free.'}
+              В данной версии покупка планов невозможна. Вы можете протестировать основной функционал в чате бесплатно.
             </p>
           </div>
         </div>

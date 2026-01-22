@@ -59,42 +59,38 @@ export function DocumentsView({ isGuestMode = false, onLogin }: DocumentsViewPro
 
   const handleDemoUpload = () => {
     if (isGuestMode) {
-      toast.info(
-        language === 'ru' 
-          ? 'Пожалуйста, войдите в систему для загрузки документов' 
-          : 'Please log in to upload documents'
-      );
+      toast.info('Пожалуйста, войдите в систему для загрузки документов');
       if (onLogin) onLogin();
       return;
     }
-    toast.info(language === 'ru' ? 'Имитация загрузки документа...' : 'Simulating document upload...');
+    toast.info('Имитация загрузки документа...');
     
     setTimeout(() => {
       const newDoc = {
         id: `demo_${Date.now()}`,
-        name: language === 'ru' ? 'Отчёт о кредитной истории.pdf' : 'Credit History Report.pdf',
+        name: 'Отчёт о кредитной истории.pdf',
         createdAt: new Date().toISOString(),
         url: '#',
         isDemo: true
       };
       setDocuments(prev => [newDoc, ...prev]);
-      toast.success(language === 'ru' ? 'Демо-документ добавлен' : 'Demo document added');
+      toast.success('Демо-документ добавлен');
     }, 1000);
   };
 
   const handleDelete = async (id: string) => {
     if (id.startsWith('demo_')) {
       setDocuments(prev => prev.filter(d => d.id !== id));
-      toast.success(language === 'ru' ? 'Удалено' : 'Deleted');
+      toast.success('Удалено');
       return;
     }
 
-    if (!confirm(language === 'ru' ? 'Вы уверены?' : 'Are you sure?')) return;
+    if (!confirm('Вы уверены?')) return;
     
     try {
       await (blink.db as any).userDocuments.delete(id);
       setDocuments(prev => prev.filter(d => d.id !== id));
-      toast.success(language === 'ru' ? 'Удалено' : 'Deleted');
+      toast.success('Удалено');
     } catch (error) {
       toast.error('Error');
     }
@@ -110,19 +106,17 @@ export function DocumentsView({ isGuestMode = false, onLogin }: DocumentsViewPro
     <div className="p-8 max-w-5xl mx-auto w-full space-y-8 animate-fade-in overflow-y-auto chat-height scrollbar-hide">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">{language === 'ru' ? 'Документы' : 'Documents'}</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Документы</h1>
           <p className="text-muted-foreground">
-            {language === 'ru' 
-              ? 'Управляйте своими финансовыми отчетами.'
-              : 'Manage your financial statements.'}
+            Управляйте своими финансовыми отчетами.
           </p>
         </div>
         <div className="flex gap-3">
-           <Button variant="outline" className="gap-2 font-bold border-primary text-primary" onClick={() => toast.info(language === 'ru' ? 'Пример отчета скоро будет доступен' : 'Example report coming soon')}>
-             <FileCheck2 className="h-4 w-4" /> {language === 'ru' ? 'Пример отчёта' : 'Example Report'}
+           <Button variant="outline" className="gap-2 font-bold border-primary text-primary" onClick={() => toast.info('Пример отчета скоро будет доступен')}>
+             <FileCheck2 className="h-4 w-4" /> Пример отчёта
            </Button>
            <Button className="gap-2 font-bold shadow-lg shadow-primary/20 bg-primary" onClick={handleDemoUpload}>
-             <Plus className="h-4 w-4" /> {language === 'ru' ? 'Загрузить' : 'Upload'}
+             <Plus className="h-4 w-4" /> Загрузить
            </Button>
         </div>
       </div>
@@ -131,9 +125,7 @@ export function DocumentsView({ isGuestMode = false, onLogin }: DocumentsViewPro
       <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl flex gap-3 text-amber-800 shadow-sm">
         <AlertCircle className="h-5 w-5 shrink-0" />
         <div className="text-xs font-medium leading-relaxed">
-          {language === 'ru' 
-            ? 'В демо-версии реальная загрузка отключена. Нажмите «Загрузить», чтобы увидеть, как документы будут выглядеть в системе.' 
-            : 'Real uploads are disabled in demo mode. Click "Upload" to see how documents will appear in the system.'}
+          В демо-версии реальная загрузка отключена. Нажмите «Загрузить», чтобы увидеть, как документы будут выглядеть в системе.
         </div>
       </div>
 
@@ -141,11 +133,9 @@ export function DocumentsView({ isGuestMode = false, onLogin }: DocumentsViewPro
         <div className="flex flex-col items-center justify-center py-24 border-2 border-dashed rounded-3xl bg-secondary/30 text-muted-foreground space-y-4">
           <FileText className="h-12 w-12 opacity-20" />
           <div className="text-center">
-            <p className="font-bold">{language === 'ru' ? 'Здесь будут ваши документы' : 'No documents yet'}</p>
+            <p className="font-bold">Здесь будут ваши документы</p>
             <p className="text-sm opacity-70">
-              {language === 'ru' 
-                ? 'Пока вы можете пройти диагностику без загрузки файлов.'
-                : 'You can complete diagnostics without uploading files for now.'}
+              Пока вы можете пройти диагностику без загрузки файлов.
             </p>
           </div>
         </div>
@@ -173,7 +163,7 @@ export function DocumentsView({ isGuestMode = false, onLogin }: DocumentsViewPro
                 <div className="space-y-1">
                   <h3 className="font-bold truncate text-sm" title={doc.name}>{doc.name}</h3>
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">
-                    {language === 'ru' ? 'Загружено' : 'Uploaded'} {new Date(doc.createdAt).toLocaleDateString()}
+                    Загружено {new Date(doc.createdAt).toLocaleDateString()}
                   </p>
                 </div>
                 <div className="pt-2 border-t border-border/50 flex items-center justify-between">
@@ -181,10 +171,10 @@ export function DocumentsView({ isGuestMode = false, onLogin }: DocumentsViewPro
                      "px-2 py-0.5 rounded text-[10px] font-bold uppercase",
                      doc.isDemo ? "bg-amber-100 text-amber-700" : "bg-primary/10 text-primary"
                    )}>
-                     {doc.isDemo ? (language === 'ru' ? 'Демо' : 'Demo') : (language === 'ru' ? 'Обработано' : 'Processed')}
+                     {doc.isDemo ? 'Демо' : 'Обработано'}
                    </div>
                    <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" disabled={doc.isDemo}>
-                      <Download className="h-3 w-3" /> {language === 'ru' ? 'Скачать' : 'Save'}
+                      <Download className="h-3 w-3" /> Скачать
                    </Button>
                 </div>
               </CardContent>

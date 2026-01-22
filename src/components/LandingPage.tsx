@@ -8,7 +8,7 @@ interface LandingPageProps {
 }
 
 export function LandingPage({ onLogin, onStartDiagnostic }: LandingPageProps) {
-  const { t, language, setLanguage } = useLanguage();
+  const { t } = useLanguage();
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
@@ -25,15 +25,6 @@ export function LandingPage({ onLogin, onStartDiagnostic }: LandingPageProps) {
           <span className="font-bold text-xl tracking-tight">Кредо-Сервис</span>
         </div>
         <div className="flex items-center gap-4">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => setLanguage(language === 'ru' ? 'en' : 'ru')}
-            className="gap-2"
-          >
-            <Globe className="h-4 w-4" />
-            {language === 'ru' ? 'RU' : 'EN'}
-          </Button>
           <Button onClick={onLogin} variant="outline" className="font-medium">
             {t('login')}
           </Button>
@@ -47,29 +38,25 @@ export function LandingPage({ onLogin, onStartDiagnostic }: LandingPageProps) {
             <div className="space-y-8">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-semibold">
                 <Sparkles className="h-4 w-4" />
-                <span>{language === 'ru' ? '5–7 минут, без документов на старте' : '5–7 minutes, no documents at start'}</span>
+                <span>5–7 минут, без документов на старте</span>
               </div>
               <h1 className="text-5xl lg:text-7xl font-bold tracking-tight leading-[1.1] text-foreground">
-                {language === 'ru' ? 'Ваш персональный' : 'Your Personal'} <br />
-                <span className="text-primary">{language === 'ru' ? 'кредитный советник' : 'Credit Advisor'}</span>
+                Ваш персональный <br />
+                <span className="text-primary">кредитный советник</span>
               </h1>
               <p className="text-xl text-muted-foreground max-w-lg leading-relaxed">
-                {language === 'ru' 
-                  ? 'Поможем разобраться в кредитной ситуации и выбрать безопасный путь дальше'
-                  : 'We will help you understand your credit situation and choose a safe path forward'}
+                Поможем разобраться в кредитной ситуации и выбрать безопасный путь дальше
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button onClick={onStartDiagnostic} size="lg" className="h-14 px-8 text-lg gap-2 font-bold shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90 text-primary-foreground">
-                  {language === 'ru' ? 'Начать диагностику' : 'Start Diagnostic'} <ArrowRight className="h-5 w-5" />
+                  Начать диагностику <ArrowRight className="h-5 w-5" />
                 </Button>
                 <Button variant="outline" size="lg" className="h-14 px-8 text-lg font-bold border-primary text-primary hover:bg-primary/5">
-                  {language === 'ru' ? 'Как это работает' : 'How it works'}
+                  Как это работает
                 </Button>
               </div>
               <p className="text-sm text-muted-foreground italic">
-                {language === 'ru' 
-                  ? 'Без обещаний одобрения кредита' 
-                  : 'No promises of credit approval'}
+                Без обещаний одобрения кредита
               </p>
             </div>
             <div className="relative h-[500px] bg-secondary/30 rounded-3xl border-2 border-primary/10 flex items-center justify-center overflow-hidden shadow-inner">
@@ -138,33 +125,27 @@ export function LandingPage({ onLogin, onStartDiagnostic }: LandingPageProps) {
                 <div className="h-14 w-14 bg-primary/10 rounded-2xl flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform duration-300">
                   <Shield className="h-7 w-7 text-primary" />
                 </div>
-                <h3 className="text-2xl font-bold">{language === 'ru' ? 'Конфиденциально' : 'Confidential'}</h3>
+                <h3 className="text-2xl font-bold">Конфиденциально</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  {language === 'ru'
-                    ? 'Ваши данные зашифрованы и используются только для анализа. Мы никогда не продаем вашу информацию.'
-                    : 'Your data is encrypted and used only for analysis. We never sell your personal information.'}
+                  Ваши данные зашифрованы и используются только для анализа. Мы никогда не продаем вашу информацию.
                 </p>
               </div>
               <div className="group space-y-5 p-8 bg-card rounded-3xl border border-transparent hover:border-primary/20 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-300">
                 <div className="h-14 w-14 bg-primary/10 rounded-2xl flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform duration-300">
                   <FileText className="h-7 w-7 text-primary" />
                 </div>
-                <h3 className="text-2xl font-bold">{language === 'ru' ? 'По шагам' : 'Step-by-step'}</h3>
+                <h3 className="text-2xl font-bold">По шагам</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  {language === 'ru'
-                    ? 'Понятный путь без перегруза. Мы ведем вас через диагностику к конкретным сценариям решения.'
-                    : 'A clear path without overload. We guide you through diagnostics to specific solution scenarios.'}
+                  Понятный путь без перегруза. Мы ведем вас через диагностику к конкретным сценариям решения.
                 </p>
               </div>
               <div className="group space-y-5 p-8 bg-card rounded-3xl border border-transparent hover:border-primary/20 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-300">
                 <div className="h-14 w-14 bg-primary/10 rounded-2xl flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform duration-300">
                   <Sparkles className="h-7 w-7 text-primary" />
                 </div>
-                <h3 className="text-2xl font-bold">{language === 'ru' ? 'Без обещаний' : 'No promises'}</h3>
+                <h3 className="text-2xl font-bold">Без обещаний</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  {language === 'ru'
-                    ? 'Только реалистичные варианты на основе вашей ситуации. Мы не обещаем одобрения, мы даем знания.'
-                    : 'Only realistic options based on your situation. We do not promise approval, we give knowledge.'}
+                  Только реалистичные варианты на основе вашей ситуации. Мы не обещаем одобрения, мы даем знания.
                 </p>
               </div>
             </div>
@@ -174,9 +155,7 @@ export function LandingPage({ onLogin, onStartDiagnostic }: LandingPageProps) {
 
       <footer className="py-12 border-t flex flex-col items-center justify-center px-6 gap-4 text-sm text-muted-foreground bg-background">
         <p className="text-center max-w-2xl italic">
-          {language === 'ru' 
-            ? 'Рекомендации носят информационный характер и не гарантируют получение кредита.' 
-            : 'Recommendations are for informational purposes and do not guarantee obtaining a credit.'}
+          Рекомендации носят информационный характер и не гарантируют получение кредита.
         </p>
         <div className="flex items-center gap-2">
           <img 
@@ -184,7 +163,7 @@ export function LandingPage({ onLogin, onStartDiagnostic }: LandingPageProps) {
             alt="Logo" 
             className="w-6 h-6 object-contain opacity-50 grayscale" 
           />
-          &copy; 2026 Кредо-Сервис. {language === 'ru' ? 'Все права защищены.' : 'All rights reserved.'}
+          &copy; 2026 Кредо-Сервис. Все права защищены.
         </div>
       </footer>
     </div>

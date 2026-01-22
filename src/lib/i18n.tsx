@@ -1,97 +1,74 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-type Language = 'en' | 'ru';
+type Language = 'ru';
 
 interface Translations {
   [key: string]: {
-    en: string;
     ru: string;
   };
 }
 
 export const translations: Translations = {
   appName: {
-    en: 'Credo-Service Advisor',
     ru: 'Кредо-Сервис Советник',
   },
   tagline: {
-    en: 'Your intelligent financial assistant',
     ru: 'Ваш интеллектуальный финансовый помощник',
   },
   startChat: {
-    en: 'Start Chat',
     ru: 'Начать чат',
   },
   login: {
-    en: 'Login',
     ru: 'Войти',
   },
   logout: {
-    en: 'Logout',
     ru: 'Выйти',
   },
   credits: {
-    en: 'Credits',
     ru: 'Кредиты',
   },
   voiceInput: {
-    en: 'Voice Input',
     ru: 'Голосовой ввод',
   },
   send: {
-    en: 'Send',
     ru: 'Отправить',
   },
   analyzing: {
-    en: 'Analyzing...',
     ru: 'Анализирую...',
   },
   placeholder: {
-    en: 'Type your message...',
     ru: 'Введите сообщение...',
   },
   profile: {
-    en: 'Profile',
     ru: 'Профиль',
   },
   documents: {
-    en: 'Documents',
     ru: 'Документы',
   },
   admin: {
-    en: 'Admin',
     ru: 'Админ',
   },
   upgrade: {
-    en: 'Upgrade',
     ru: 'Улучшить',
   }
 };
 
 interface LanguageContextType {
   language: Language;
-  setLanguage: (lang: Language) => void;
   t: (key: string) => string;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [language, setLanguage] = useState<Language>(() => {
-    const saved = localStorage.getItem('app_language');
-    return (saved as Language) || 'ru';
-  });
-
-  useEffect(() => {
-    localStorage.setItem('app_language', language);
-  }, [language]);
+  const language: Language = 'ru';
 
   const t = (key: string) => {
-    return translations[key]?.[language] || key;
+    return translations[key]?.ru || key;
   };
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+    <LanguageContext.Provider value={{ language, t }}>
       {children}
     </LanguageContext.Provider>
   );

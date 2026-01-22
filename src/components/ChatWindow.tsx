@@ -44,7 +44,7 @@ export function ChatWindow({ profile, updateProfile, isGuestMode = false, onLogi
       const loginRequiredActions = ['согласен', 'предоставить согласие', 'agree', 'provide consent'];
       
       if (loginRequiredActions.some(action => lowerText.includes(action))) {
-        toast.info(language === 'ru' ? 'Для продолжения необходимо войти в систему' : 'Login required to continue');
+        toast.info('Для продолжения необходимо войти в систему');
         if (onLogin) onLogin();
         return;
       }
@@ -89,7 +89,7 @@ export function ChatWindow({ profile, updateProfile, isGuestMode = false, onLogi
             toast.info(t('analyzing'));
             const { text } = await blink.ai.transcribeAudio({
               audio: base64,
-              language: language === 'ru' ? 'ru' : 'en'
+              language: 'ru'
             });
             if (text) {
               setLocalInput(text);
@@ -121,44 +121,36 @@ export function ChatWindow({ profile, updateProfile, isGuestMode = false, onLogi
       {/* Demo Banner */}
       <div className="bg-amber-500/10 border-b border-amber-500/20 px-6 py-2 flex items-center justify-center gap-2 text-[11px] font-bold text-amber-600 uppercase tracking-widest">
         <AlertCircle className="h-3 w-3" />
-        {language === 'ru' 
-          ? 'Демо-версия. Не вводите персональные данные. Анализ и документы — имитация.' 
-          : 'Demo Mode. Do not enter personal data. Analysis and documents are simulations.'}
+        Демо-версия. Не вводите персональные данные. Анализ и документы — имитация.
       </div>
 
       <header className="h-16 border-b flex items-center justify-between px-6 shrink-0 bg-background z-10">
         <div className="flex items-center gap-3">
           <div className="flex flex-col">
-            <h2 className="font-bold text-sm">{language === 'ru' ? 'Кредитный советник' : 'Credit Advisor'}</h2>
+            <h2 className="font-bold text-sm">Кредитный советник</h2>
             <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground uppercase tracking-wider font-bold">
               <span className={cn(chatState === 'INTRO' || chatState === 'CONSENT' || chatState === 'JURISDICTION' ? "text-primary" : "")}>
-                {language === 'ru' ? 'Регион' : 'Region'}
+                Регион
               </span>
               <span>/</span>
               <span className={cn(chatState.startsWith('DIAGNOSTIC_') ? "text-primary" : "")}>
-                {language === 'ru' ? 'Диагностика' : 'Diagnostic'}
+                Диагностика
               </span>
               <span>/</span>
               <span className={cn(chatState === 'SUMMARY' ? "text-primary" : "")}>
-                {language === 'ru' ? 'Итог' : 'Summary'}
+                Итог
               </span>
             </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {profile?.jurisdiction && (
-            <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/5 rounded-md text-xs font-bold text-primary border border-primary/10">
-              <Globe className="h-3 w-3" />
-              {profile.jurisdiction}
-            </div>
-          )}
         </div>
       </header>
 
       {/* Progress Bar */}
       <div className="px-6 py-3 bg-secondary/30 border-b">
         <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">
-          <span>{language === 'ru' ? 'Прогресс анализа' : 'Analysis Progress'}</span>
+          <span>Прогресс анализа</span>
           <span>{getProgressValue()}%</span>
         </div>
         <Progress value={getProgressValue()} className="h-1.5" />
@@ -204,10 +196,10 @@ export function ChatWindow({ profile, updateProfile, isGuestMode = false, onLogi
                     {showIntroOptions && (
                       <Button 
                         size="sm" 
-                        onClick={() => handleSend(language === 'ru' ? 'Начать диагностику' : 'Start Diagnostic')}
+                        onClick={() => handleSend('Начать диагностику')}
                         className="rounded-full px-4 font-bold h-9"
                       >
-                        {language === 'ru' ? 'Начать диагностику' : 'Start Diagnostic'}
+                        Начать диагностику
                       </Button>
                     )}
                     
@@ -215,10 +207,10 @@ export function ChatWindow({ profile, updateProfile, isGuestMode = false, onLogi
                       <>
                         <Button 
                           size="sm" 
-                          onClick={() => handleSend(language === 'ru' ? 'Предоставить согласие' : 'Provide Consent')}
+                          onClick={() => handleSend('Предоставить согласие')}
                           className="rounded-full px-4 font-bold h-9"
                         >
-                          {language === 'ru' ? 'Предоставить согласие' : 'Provide Consent'}
+                          Предоставить согласие
                         </Button>
                         <Button 
                           size="sm" 
@@ -226,7 +218,7 @@ export function ChatWindow({ profile, updateProfile, isGuestMode = false, onLogi
                           onClick={() => setLocalInput('')}
                           className="rounded-full px-4 font-bold h-9"
                         >
-                          {language === 'ru' ? 'Отмена' : 'Cancel'}
+                          Отмена
                         </Button>
                       </>
                     )}
@@ -248,27 +240,25 @@ export function ChatWindow({ profile, updateProfile, isGuestMode = false, onLogi
                         <div className="p-4 bg-primary/5 border border-primary/20 rounded-2xl space-y-3">
                           <h4 className="font-bold text-xs uppercase tracking-widest text-primary flex items-center gap-2">
                             <ShieldCheck className="h-4 w-4" />
-                            {language === 'ru' ? 'Первые шаги' : 'First Steps'}
+                            Первые шаги
                           </h4>
                           <div className="space-y-2">
                              <Button className="w-full justify-start gap-2 h-11 px-4 rounded-xl font-bold bg-primary shadow-lg shadow-primary/20">
                                <CheckCircle2 className="h-4 w-4" />
-                               {language === 'ru' ? 'Улучшение кредитной истории' : 'Improve Credit History'}
+                               Улучшение кредитной истории
                              </Button>
                              <Button variant="outline" className="w-full justify-start gap-2 h-11 px-4 rounded-xl font-bold border-primary text-primary">
                                <CheckCircle2 className="h-4 w-4" />
-                               {language === 'ru' ? 'План выхода из долгов' : 'Debt Recovery Plan'}
+                               План выхода из долгов
                              </Button>
                           </div>
                         </div>
                         <div className="p-4 bg-secondary/50 rounded-2xl border border-dashed border-muted-foreground/30 text-center space-y-3">
                            <p className="text-xs font-medium text-muted-foreground leading-relaxed">
-                             {language === 'ru' 
-                               ? 'Для точного профессионального разбора нужна кредитная история (КИ).' 
-                               : 'For a precise professional analysis, credit history is required.'}
+                             Для точного профессионального разбора нужна кредитная история (КИ).
                            </p>
                            <Button disabled variant="secondary" className="w-full h-10 text-xs font-bold uppercase tracking-widest opacity-50 cursor-not-allowed">
-                             {language === 'ru' ? 'Глубокий анализ КИ (демо)' : 'Deep Analysis (demo)'}
+                             Глубокий анализ КИ (демо)
                            </Button>
                         </div>
                       </div>
@@ -312,7 +302,7 @@ export function ChatWindow({ profile, updateProfile, isGuestMode = false, onLogi
                 size="icon"
                 className={cn("h-9 w-9 rounded-xl", isRecording && "text-red-500 bg-red-50 animate-pulse")}
                 onClick={() => {
-                   toast.info(language === 'ru' ? "Запись голоса (демо)..." : "Voice recording (demo)...");
+                   toast.info("Запись голоса (демо)...");
                 }}
               >
                 <Mic className="h-5 w-5" />
@@ -328,7 +318,7 @@ export function ChatWindow({ profile, updateProfile, isGuestMode = false, onLogi
           </Button>
         </div>
         <p className="text-[10px] text-center text-muted-foreground mt-4 uppercase tracking-[0.2em] font-bold opacity-60">
-          Кредо-Сервис {language === 'ru' ? '— ваш финансовый навигатор' : '— your financial navigator'}
+          Кредо-Сервис — ваш финансовый навигатор
         </p>
       </div>
     </div>

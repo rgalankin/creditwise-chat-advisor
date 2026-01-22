@@ -32,9 +32,7 @@ interface ScenarioSelectionScreenProps {
 interface ScenarioCard {
   id: ScenarioType;
   titleRu: string;
-  titleEn: string;
   descRu: string;
-  descEn: string;
   icon: React.ElementType;
   color: string;
   steps: number;
@@ -44,9 +42,7 @@ const scenarios: ScenarioCard[] = [
   {
     id: 'credit',
     titleRu: 'Получение кредита',
-    titleEn: 'Get a Loan',
     descRu: 'Подбор оптимального предложения под вашу ситуацию',
-    descEn: 'Find the best offer for your situation',
     icon: CreditCard,
     color: 'bg-emerald-500',
     steps: 5
@@ -54,9 +50,7 @@ const scenarios: ScenarioCard[] = [
   {
     id: 'refinance',
     titleRu: 'Рефинансирование',
-    titleEn: 'Refinancing',
     descRu: 'Снижение ставки и ежемесячного платежа',
-    descEn: 'Lower your rate and monthly payment',
     icon: RefreshCw,
     color: 'bg-blue-500',
     steps: 4
@@ -64,9 +58,7 @@ const scenarios: ScenarioCard[] = [
   {
     id: 'debtPlan',
     titleRu: 'План выхода из долгов',
-    titleEn: 'Debt Recovery Plan',
     descRu: 'Пошаговая стратегия погашения задолженностей',
-    descEn: 'Step-by-step debt repayment strategy',
     icon: TrendingUp,
     color: 'bg-amber-500',
     steps: 6
@@ -74,9 +66,7 @@ const scenarios: ScenarioCard[] = [
   {
     id: 'improveHistory',
     titleRu: 'Улучшение КИ',
-    titleEn: 'Improve Credit',
     descRu: 'Восстановление кредитной истории',
-    descEn: 'Credit history restoration',
     icon: Shield,
     color: 'bg-violet-500',
     steps: 5
@@ -84,9 +74,7 @@ const scenarios: ScenarioCard[] = [
   {
     id: 'insuranceReturn',
     titleRu: 'Возврат страхования',
-    titleEn: 'Insurance Return',
     descRu: 'Возврат навязанных страховок',
-    descEn: 'Return of imposed insurance',
     icon: Undo2,
     color: 'bg-rose-500',
     steps: 4
@@ -94,9 +82,7 @@ const scenarios: ScenarioCard[] = [
   {
     id: 'bankruptcy',
     titleRu: 'Банкротство',
-    titleEn: 'Bankruptcy',
     descRu: 'Проверка возможности и процедура',
-    descEn: 'Eligibility check and procedure',
     icon: Scale,
     color: 'bg-slate-600',
     steps: 5
@@ -104,15 +90,9 @@ const scenarios: ScenarioCard[] = [
 ];
 
 export function ScenarioSelectionScreen({ onSelectScenario, onBack, isGuestMode = false, onLogin }: ScenarioSelectionScreenProps) {
-  const { language } = useLanguage();
-
   const handleSelect = (id: ScenarioType) => {
     if (isGuestMode) {
-      toast.info(
-        language === 'ru' 
-          ? 'Пожалуйста, войдите в систему для использования сценариев' 
-          : 'Please log in to use scenarios'
-      );
+      toast.info('Пожалуйста, войдите в систему для использования сценариев');
       if (onLogin) onLogin();
       return;
     }
@@ -129,16 +109,16 @@ export function ScenarioSelectionScreen({ onSelectScenario, onBack, isGuestMode 
           </div>
           <div className="flex flex-col">
             <h2 className="font-bold text-sm">
-              {language === 'ru' ? 'Выберите сценарий' : 'Select a Scenario'}
+              Выберите сценарий
             </h2>
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">
-              {language === 'ru' ? 'Мастер финансовых решений' : 'Financial Solutions Wizard'}
+              Мастер финансовых решений
             </p>
           </div>
         </div>
         {onBack && (
           <Button variant="ghost" size="sm" onClick={onBack}>
-            {language === 'ru' ? 'Назад' : 'Back'}
+            Назад
           </Button>
         )}
       </header>
@@ -149,14 +129,10 @@ export function ScenarioSelectionScreen({ onSelectScenario, onBack, isGuestMode 
           {/* Intro */}
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold mb-2">
-              {language === 'ru' 
-                ? 'Какую задачу хотите решить?' 
-                : 'What task do you want to solve?'}
+              Какую задачу хотите решить?
             </h1>
             <p className="text-muted-foreground text-sm max-w-md mx-auto">
-              {language === 'ru' 
-                ? 'Выберите сценарий и пройдите пошаговый мастер для получения персональных рекомендаций' 
-                : 'Select a scenario and go through the step-by-step wizard for personalized recommendations'}
+              Выберите сценарий и пройдите пошаговый мастер для получения персональных рекомендаций
             </p>
           </div>
 
@@ -186,16 +162,16 @@ export function ScenarioSelectionScreen({ onSelectScenario, onBack, isGuestMode 
 
                   {/* Content */}
                   <h3 className="font-bold text-base mb-1 group-hover:text-primary transition-colors">
-                    {language === 'ru' ? scenario.titleRu : scenario.titleEn}
+                    {scenario.titleRu}
                   </h3>
                   <p className="text-xs text-muted-foreground leading-relaxed mb-4">
-                    {language === 'ru' ? scenario.descRu : scenario.descEn}
+                    {scenario.descRu}
                   </p>
 
                   {/* Footer */}
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                      {scenario.steps} {language === 'ru' ? 'шагов' : 'steps'}
+                      {scenario.steps} шагов
                     </span>
                     <div className="h-8 w-8 rounded-lg bg-primary/5 flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-all">
                       <ArrowRight className="h-4 w-4" />
@@ -214,9 +190,7 @@ export function ScenarioSelectionScreen({ onSelectScenario, onBack, isGuestMode 
 
           {/* Help text */}
           <p className="text-center text-xs text-muted-foreground mt-8">
-            {language === 'ru' 
-              ? 'Не уверены? Начните с диагностики в чате — мы поможем определить оптимальный сценарий.' 
-              : "Not sure? Start with diagnostics in chat — we'll help determine the optimal scenario."}
+            Не уверены? Начните с диагностики в чате — мы поможем определить оптимальный сценарий.
           </p>
         </div>
       </div>

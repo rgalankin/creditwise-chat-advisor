@@ -48,30 +48,17 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
   }, []);
 
   const getInitialMessage = useCallback((state: ChatState) => {
-    if (language === 'ru') {
-      switch (state) {
-        case 'INTRO':
-          return "Здравствуйте! Я ваш Советник CreditWise. Я здесь, чтобы помочь вам управлять вашим финансовым положением с полной автономией.\n\nПрежде чем мы начнем, в какой стране или регионе вы находитесь? Мои рекомендации в значительной степени зависят от местных финансовых правил.";
-        case 'CONSENT':
-          return "Чтобы продолжить, необходимо согласие на обработку данных. Информация используется только для подготовки рекомендаций.";
-        case 'JURISDICTION':
-          return "В какой стране вы находитесь? Рекомендации зависят от местных правил.";
-        default:
-          return "";
-      }
-    } else {
-      switch (state) {
-        case 'INTRO':
-          return "I will help you understand your credit situation and suggest a safe course of action. \n\nIt will take 5–7 minutes, documents are not needed at the start. \n\nIn demo mode, do not enter personal data.";
-        case 'CONSENT':
-          return "To continue, consent to data processing is required. Information is used only for preparing recommendations.";
-        case 'JURISDICTION':
-          return "What country are you in? Recommendations depend on local rules.";
-        default:
-          return "";
-      }
+    switch (state) {
+      case 'INTRO':
+        return "Здравствуйте! Я ваш Советник CreditWise. Я здесь, чтобы помочь вам управлять вашим финансовым положением с полной автономией.\n\nПрежде чем мы начнем, в какой стране или регионе вы находитесь? Мои рекомендации в значительной степени зависят от местных финансовых правил.";
+      case 'CONSENT':
+        return "Чтобы продолжить, необходимо согласие на обработку данных. Информация используется только для подготовки рекомендаций.";
+      case 'JURISDICTION':
+        return "В какой стране вы находитесь? Рекомендации зависят от местных правил.";
+      default:
+        return "";
     }
-  }, [language]);
+  }, []);
 
   const initSession = useCallback(async () => {
     // Check if user is not authenticated (guest mode)
@@ -116,7 +103,7 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
       if (!activeSession) {
         activeSession = await (blink.db as any).chatSessions.create({
           userId: profile?.userId,
-          title: language === 'ru' ? 'Первичная диагностика' : 'Initial Diagnostic'
+          title: 'Первичная диагностика'
         });
         
         const greeting = {
@@ -151,28 +138,15 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
   }, [profile, language, getInitialMessage]);
 
   const getDiagnosticQuestion = (step: number) => {
-    if (language === 'ru') {
-      switch (step) {
-        case 1: return { q: "Что вам сейчас важнее всего?", options: ["Получить кредит", "Рефинансировать", "Выйти из долгов", "Улучшить кредитную историю", "Вернуть страховку", "Проверить банкротство"] };
-        case 2: return { q: "У вас сейчас есть действующие кредиты или долги?", options: ["Да, есть", "Нет", "Не уверен(а)"] };
-        case 3: return { q: "Есть просрочки по платежам?", options: ["Нет", "Да, до 30 дней", "Да, 30–90 дней", "Да, больше 90 дней", "Не знаю"] };
-        case 4: return { q: "Какой у вас примерно ежемесячный доход?", options: ["0–50k", "50–100k", "100–200k", "200k+", "Нестабильный"] };
-        case 5: return { q: "Сколько в месяц уходит на платежи по кредитам?", options: ["0", "до 10k", "10–30k", "30–70k", "70k+", "Не знаю"] };
-        case 6: return { q: "Как вы оцениваете свою кредитную историю?", options: ["Хорошая", "Средняя", "Плохая", "Не знаю"] };
-        case 7: return { q: "Насколько срочно нужно решение?", options: ["Сегодня/завтра", "В течение недели", "В течение месяца", "Пока просто хочу понять варианты"] };
-        default: return { q: "", options: [] };
-      }
-    } else {
-      switch (step) {
-        case 1: return { q: "What is most important to you right now?", options: ["Get a loan", "Refinance", "Get out of debt", "Improve credit history", "Return insurance", "Check bankruptcy"] };
-        case 2: return { q: "Do you currently have active loans or debts?", options: ["Yes, I have", "No", "Not sure"] };
-        case 3: return { q: "Are there any payment delays?", options: ["No", "Yes, up to 30 days", "Yes, 30–90 days", "Yes, more than 90 days", "Don't know"] };
-        case 4: return { q: "What is your approximate monthly income?", options: ["0–50k", "50–100k", "100–200k", "200k+", "Unstable"] };
-        case 5: return { q: "How much per month goes to loan payments?", options: ["0", "up to 10k", "10–30k", "30–70k", "70k+", "Don't know"] };
-        case 6: return { q: "How do you rate your credit history?", options: ["Good", "Average", "Bad", "Don't know"] };
-        case 7: return { q: "How urgent is the solution needed?", options: ["Today/tomorrow", "Within a week", "Within a month", "Just want to understand options"] };
-        default: return { q: "", options: [] };
-      }
+    switch (step) {
+      case 1: return { q: "Что вам сейчас важнее всего?", options: ["Получить кредит", "Рефинансировать", "Выйти из долгов", "Улучшить кредитную историю", "Вернуть страховку", "Проверить банкротство"] };
+      case 2: return { q: "У вас сейчас есть действующие кредиты или долги?", options: ["Да, есть", "Нет", "Не уверен(а)"] };
+      case 3: return { q: "Есть просрочки по платежам?", options: ["Нет", "Да, до 30 дней", "Да, 30–90 дней", "Да, больше 90 дней", "Не знаю"] };
+      case 4: return { q: "Какой у вас примерно ежемесячный доход?", options: ["0–50k", "50–100k", "100–200k", "200k+", "Нестабильный"] };
+      case 5: return { q: "Сколько в месяц уходит на платежи по кредитам?", options: ["0", "до 10k", "10–30k", "30–70k", "70k+", "Не знаю"] };
+      case 6: return { q: "Как вы оцениваете свою кредитную историю?", options: ["Хорошая", "Средняя", "Плохая", "Не знаю"] };
+      case 7: return { q: "Насколько срочно нужно решение?", options: ["Сегодня/завтра", "В течение недели", "В течение месяца", "Пока просто хочу понять варианты"] };
+      default: return { q: "", options: [] };
     }
   };
 
@@ -289,7 +263,7 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
       await handleN8nResponse(response);
     } catch (error) {
       console.error('[useChat] n8n error:', error);
-      toast.error(language === 'ru' ? 'Ошибка соединения. Попробуйте ещё раз.' : 'Connection error. Please try again.');
+      toast.error('Ошибка соединения. Попробуйте ещё раз.');
     } finally {
       setIsLoading(false);
     }
@@ -328,7 +302,7 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
       await handleN8nResponse(response);
     } catch (error) {
       console.error('[useChat] Action error:', error);
-      toast.error(language === 'ru' ? 'Ошибка. Попробуйте ещё раз.' : 'Error. Please try again.');
+      toast.error('Ошибка. Попробуйте ещё раз.');
     } finally {
       setIsLoading(false);
     }
@@ -348,9 +322,7 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
         sessionId: session.id,
         userId: profile.userId,
         role: 'assistant',
-        content: language === 'ru' 
-          ? "Я не могу помогать с такими действиями. Могу предложить легальные и безопасные варианты." 
-          : "I cannot assist with such actions. I can suggest legal and safe options.",
+        content: "Я не могу помогать с такими действиями. Могу предложить легальные и безопасные варианты.",
         metadata: JSON.stringify({ state: chatState, diagnosticData })
       });
       setMessages(prev => [...prev, botMsg]);
@@ -401,7 +373,7 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
           await moveToState('SUMMARY', text, updatedData);
         } catch (error) {
           console.error('Summary error:', error);
-          await moveToState('SUMMARY', language === 'ru' ? 'Диагностика завершена. Вот краткий итог по вашей ситуации...' : 'Diagnostic complete. Here is a summary of your situation...', updatedData);
+          await moveToState('SUMMARY', 'Диагностика завершена. Вот краткий итог по вашей ситуации...', updatedData);
         } finally {
           setIsLoading(false);
         }
@@ -462,7 +434,7 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
     // Demo Guardrails: PII Check (перед сохранением)
     const piiRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)|(\+?\d{10,15})|(\d{4}\s\d{6})|(\d{10})/g;
     if (piiRegex.test(content)) {
-      toast.warning(language === 'ru' ? "В демо-версии не вводите персональные данные." : "In demo mode, do not enter personal data.");
+      toast.warning("В демо-версии не вводите персональные данные.");
       return;
     }
 
@@ -511,7 +483,7 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
   const uploadDocument = async (file: File) => {
     // ... same as before but update state/metadata if needed
     if (!session || !profile) return;
-    toast.info(language === 'ru' ? `Анализ ${file.name}...` : `Analyzing ${file.name}...`);
+    toast.info(`Анализ ${file.name}...`);
     try {
       const { publicUrl } = await blink.storage.upload(file, `docs/${profile?.userId || 'guest'}/${Date.now()}_${file.name}`);
       const analysisPrompt = `Extract key financial data from this document. Document: ${file.name}`;
@@ -526,7 +498,7 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
         sessionId: session.id,
         userId: profile.userId,
         role: 'assistant',
-        content: language === 'ru' ? `Документ **${file.name}** проанализирован.` : `Document **${file.name}** analyzed.`,
+        content: `Документ **${file.name}** проанализирован.`,
         metadata: JSON.stringify({ state: chatState, diagnosticData })
       });
       setMessages(prev => [...prev, botMsg]);

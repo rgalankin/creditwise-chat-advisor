@@ -46,20 +46,19 @@ const scenarioColors: Record<ScenarioType, string> = {
   bankruptcy: 'from-slate-600 to-slate-700'
 };
 
-const scenarioTitles: Record<ScenarioType, { ru: string; en: string }> = {
-  credit: { ru: 'Получение кредита', en: 'Get a Loan' },
-  refinance: { ru: 'Рефинансирование', en: 'Refinancing' },
-  debtPlan: { ru: 'План выхода из долгов', en: 'Debt Recovery Plan' },
-  improveHistory: { ru: 'Улучшение КИ', en: 'Improve Credit' },
-  insuranceReturn: { ru: 'Возврат страхования', en: 'Insurance Return' },
-  bankruptcy: { ru: 'Банкротство', en: 'Bankruptcy' }
+const scenarioTitles: Record<ScenarioType, { ru: string }> = {
+  credit: { ru: 'Получение кредита' },
+  refinance: { ru: 'Рефинансирование' },
+  debtPlan: { ru: 'План выхода из долгов' },
+  improveHistory: { ru: 'Улучшение КИ' },
+  insuranceReturn: { ru: 'Возврат страхования' },
+  bankruptcy: { ru: 'Банкротство' }
 };
 
 export function ScenarioSummary({ result, onBack, onStartChat, onNewScenario }: ScenarioSummaryProps) {
-  const { language } = useLanguage();
   const Icon = scenarioIcons[result.scenario];
   const colorGradient = scenarioColors[result.scenario];
-  const title = scenarioTitles[result.scenario][language === 'ru' ? 'ru' : 'en'];
+  const title = scenarioTitles[result.scenario].ru;
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -107,7 +106,7 @@ export function ScenarioSummary({ result, onBack, onStartChat, onNewScenario }: 
           </div>
           <h1 className="text-xl font-bold mb-1">{title}</h1>
           <p className="text-white/70 text-sm">
-            {language === 'ru' ? 'Анализ завершён' : 'Analysis Complete'}
+            Анализ завершён
           </p>
         </div>
       </div>
@@ -122,7 +121,7 @@ export function ScenarioSummary({ result, onBack, onStartChat, onNewScenario }: 
                 <Sparkles className="h-4 w-4 text-primary" />
               </div>
               <h2 className="font-bold text-sm uppercase tracking-wider text-primary">
-                {language === 'ru' ? 'Итоговая оценка' : 'Summary Assessment'}
+                Итоговая оценка
               </h2>
             </div>
             <p className="text-sm leading-relaxed text-foreground">
@@ -137,7 +136,7 @@ export function ScenarioSummary({ result, onBack, onStartChat, onNewScenario }: 
                 <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
               </div>
               <h2 className="font-bold text-sm uppercase tracking-wider text-red-600 dark:text-red-400">
-                {language === 'ru' ? 'Ключевые риски' : 'Key Risks'}
+                Ключевые риски
               </h2>
             </div>
             <ul className="space-y-3">
@@ -159,7 +158,7 @@ export function ScenarioSummary({ result, onBack, onStartChat, onNewScenario }: 
                 <Lightbulb className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               </div>
               <h2 className="font-bold text-sm uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                {language === 'ru' ? 'Рекомендации' : 'Recommendations'}
+                Рекомендации
               </h2>
             </div>
             <ul className="space-y-3">
@@ -179,7 +178,7 @@ export function ScenarioSummary({ result, onBack, onStartChat, onNewScenario }: 
               className="w-full h-12 rounded-xl font-bold shadow-lg"
             >
               <MessageSquare className="h-4 w-4 mr-2" />
-              {language === 'ru' ? 'Обсудить с советником' : 'Discuss with Advisor'}
+              Обсудить с советником
             </Button>
 
             <div className="grid grid-cols-2 gap-3">
@@ -189,7 +188,7 @@ export function ScenarioSummary({ result, onBack, onStartChat, onNewScenario }: 
                 className="h-11 rounded-xl font-bold"
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
-                {language === 'ru' ? 'Другой сценарий' : 'Other Scenario'}
+                Другой сценарий
               </Button>
               <Button 
                 variant="outline"
@@ -197,16 +196,14 @@ export function ScenarioSummary({ result, onBack, onStartChat, onNewScenario }: 
                 disabled
               >
                 <Download className="h-4 w-4 mr-2" />
-                {language === 'ru' ? 'Скачать PDF' : 'Download PDF'}
+                Скачать PDF
               </Button>
             </div>
           </div>
 
           {/* Disclaimer */}
           <p className="text-[10px] text-center text-muted-foreground mt-6 uppercase tracking-widest">
-            {language === 'ru' 
-              ? 'Информация носит рекомендательный характер и не является офертой' 
-              : 'Information is advisory in nature and is not an offer'}
+            Информация носит рекомендательный характер и не является офертой
           </p>
         </div>
       </div>

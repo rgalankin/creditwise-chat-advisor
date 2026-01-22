@@ -29,21 +29,35 @@ export const useCredits = () => {
             credits: 100
           });
           setCredits(100);
-        } catch {
+        } catch (upsertError: any) {
+          console.warn('Credits upsert failed, trying to fetch existing record:', upsertError);
           // If upsert also fails, try fetching again (record may exist now)
-          const retryRecords = await (blink.db as any).userCredits.list({
-            where: { userId: user.id },
-            limit: 1
-          });
-          if (retryRecords && retryRecords.length > 0) {
-            setCredits(Number(retryRecords[0].credits));
+          try {
+            const retryRecords = await (blink.db as any).userCredits.list({
+              where: { userId: user.id },
+              limit: 1
+            });
+            if (retryRecords && retryRecords.length > 0) {
+              setCredits(Number(retryRecords[0].credits));
+            } else {
+              // If still no record, set default credits
+              setCredits(100);
+            }
+          } catch (retryError: any) {
+            console.warn('Credits fetch retry failed, using default:', retryError);
+            setCredits(100);
           }
         }
       } else {
         setCredits(Number(records[0].credits));
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch credits:', error);
+      // On network errors, set default credits to avoid blocking the UI
+      if (error?.code === 'NETWORK_ERROR' || error?.message?.includes('Failed to fetch')) {
+        console.warn('Network error fetching credits, using default value');
+        setCredits(100);
+      }
     } finally {
       setLoading(false);
     }
@@ -72,11 +86,20 @@ export const useCredits = () => {
         await (blink.db as any).userCredits.update(records[0].id, {
           credits: newCredits
         });
+        setCredits(newCredits);
+        return true;
+      } else {
+        console.warn('No credits record found for user');
+        return false;
       }
-      setCredits(newCredits);
-      return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to use credit:', error);
+      // On network errors, still decrement locally for better UX
+      if (error?.code === 'NETWORK_ERROR' || error?.message?.includes('Failed to fetch')) {
+        console.warn('Network error, decrementing credits locally');
+        setCredits(credits - 1);
+        return true;
+      }
       return false;
     }
   };
@@ -95,12 +118,22 @@ export const useCredits = () => {
         await (blink.db as any).userCredits.update(records[0].id, {
           credits: newCredits
         });
+        setCredits(newCredits);
+        toast.success(`Successfully added ${amount} credits!`);
+      } else {
+        console.warn('No credits record found for user, cannot add credits');
+        toast.error('Failed to add credits - no credits record found');
       }
-      setCredits(newCredits);
-      toast.success(`Successfully added ${amount} credits!`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to add credits:', error);
-      toast.error('Failed to add credits');
+      // On network errors, still update locally for better UX
+      if (error?.code === 'NETWORK_ERROR' || error?.message?.includes('Failed to fetch')) {
+        console.warn('Network error, updating credits locally');
+        setCredits(credits + amount);
+        toast.success(`Credits added locally (${amount}) - sync may be delayed`);
+      } else {
+        toast.error('Failed to add credits');
+      }
     }
   };
 

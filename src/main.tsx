@@ -1,10 +1,23 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import { Toaster } from 'sonner'
+import { BlinkProvider, BlinkAuthProvider } from '@blinkdotnew/react'
+import { LanguageProvider } from './lib/i18n'
 import App from './App'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <App />
+    <BlinkProvider
+      projectId={import.meta.env.VITE_BLINK_PROJECT_ID}
+      publishableKey={import.meta.env.VITE_BLINK_PUBLISHABLE_KEY}
+    >
+      <BlinkAuthProvider>
+        <LanguageProvider>
+          <Toaster position="top-right" richColors />
+          <App />
+        </LanguageProvider>
+      </BlinkAuthProvider>
+    </BlinkProvider>
   </React.StrictMode>,
 )

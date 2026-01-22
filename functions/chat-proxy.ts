@@ -167,8 +167,7 @@ async function handler(req: Request): Promise<Response> {
     // FALLBACK MODE (без n8n - для демо)
     // ==========================================================================
 
-    // TEMPORARILY FORCE N8N MODE FOR TESTING
-    if (false) { // Changed from: if (!n8nUrl)
+    if (!n8nUrl) {
       console.log(`[chat-proxy] Fallback mode for endpoint: ${targetEndpoint}`);
 
       // В fallback режиме возвращаем базовый ответ
@@ -176,7 +175,7 @@ async function handler(req: Request): Promise<Response> {
       const fallbackResponse = {
         text: "Hello! How can I assist you today?",
         state: "CHAT",
-        sessionId: data.sessionId || `fallback_${Date.now()}`,
+        sessionId: data.sessionId || `fallback_${Date.now()}`, // Return provided sessionId if available
         ui: [],
         meta: {
           event: { type: "message_processed" }

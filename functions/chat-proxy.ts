@@ -79,6 +79,8 @@ async function callN8n(
 // =============================================================================
 
 async function handler(req: Request): Promise<Response> {
+  console.log(`[chat-proxy] HANDLER START - method: ${req.method}, url: ${req.url}`);
+
   // CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders });

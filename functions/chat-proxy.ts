@@ -215,6 +215,26 @@ async function handler(req: Request): Promise<Response> {
       case "message": {
         console.log(`[chat-proxy] Processing message endpoint with sessionId: ${data.sessionId}`);
 
+        // Double-check environment variables for message endpoint
+        const messageN8nUrl = Deno.env.get("N8N_WEBHOOK_URL");
+        const messageN8nSecret = Deno.env.get("N8N_WEBHOOK_SECRET");
+        console.log(`[chat-proxy] Message endpoint env check: n8nUrl=${messageN8nUrl ? 'SET (' + messageN8nUrl + ')' : 'NOT_SET'}, n8nSecret=${messageN8nSecret ? 'SET' : 'NOT_SET'}`);
+
+        // If no n8n config for message endpoint, use fallback
+        if (!messageN8nUrl) {
+          console.log(`[chat-proxy] Message endpoint: n8n not configured, using fallback`);
+          const fallbackResponse = {
+            text: "Hello! How can I assist you today?",
+            state: "CHAT",
+            sessionId: data.sessionId || `fallback_${Date.now()}`, // Return the provided sessionId
+            ui: [],
+            meta: {
+              event: { type: "message_processed" }
+            }
+          };
+          return jsonResponse(fallbackResponse);
+        }
+
         // Отправить сообщение
         if (!data.sessionId || !data.content) {
           return errorResponse("Missing sessionId or content", "INVALID_REQUEST");

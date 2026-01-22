@@ -167,7 +167,8 @@ async function handler(req: Request): Promise<Response> {
     // FALLBACK MODE (без n8n - для демо)
     // ==========================================================================
 
-    if (!n8nUrl) {
+    // TEMPORARILY FORCE N8N MODE FOR TESTING
+    if (false) { // Changed from: if (!n8nUrl)
       console.log(`[chat-proxy] Fallback mode for endpoint: ${targetEndpoint}`);
 
       // В fallback режиме возвращаем базовый ответ

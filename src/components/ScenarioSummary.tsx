@@ -4,6 +4,8 @@ import { cn } from '../lib/utils';
 import { useLanguage } from '../lib/i18n';
 import { ScenarioResult } from './ScenarioWizard';
 import { ScenarioType } from './ScenarioSelectionScreen';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { 
   ArrowLeft, 
   CheckCircle2, 
@@ -124,9 +126,11 @@ export function ScenarioSummary({ result, onBack, onStartChat, onNewScenario }: 
                 Итоговая оценка
               </h2>
             </div>
-            <p className="text-sm leading-relaxed text-foreground">
-              {result.summary}
-            </p>
+            <div className="text-sm leading-relaxed text-foreground prose prose-sm max-w-none dark:prose-invert">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {result.summary}
+              </ReactMarkdown>
+            </div>
           </div>
 
           {/* Risks Section */}

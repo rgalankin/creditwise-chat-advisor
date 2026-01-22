@@ -7,6 +7,8 @@ import { useLanguage } from '../lib/i18n';
 import { blink } from '../lib/blink';
 import { toast } from 'sonner';
 import { Progress } from './ui/progress';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface ChatWindowProps {
   profile: any;
@@ -187,7 +189,20 @@ export function ChatWindow({ profile, updateProfile, isGuestMode = false, onLogi
                     ? "bg-primary text-primary-foreground rounded-tr-none" 
                     : "bg-card border rounded-tl-none text-foreground"
                 )}>
-                  <div className="whitespace-pre-wrap">{m.content}</div>
+                  <ReactMarkdown 
+                    remarkPlugins={[remarkGfm]}
+                    className="prose prose-sm max-w-none dark:prose-invert prose-p:leading-relaxed prose-pre:bg-muted prose-pre:p-4 prose-pre:rounded-xl"
+                    components={{
+                      p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                      ul: ({ children }) => <ul className="list-disc ml-4 mb-2 space-y-1">{children}</ul>,
+                      ol: ({ children }) => <ol className="list-decimal ml-4 mb-2 space-y-1">{children}</ol>,
+                      li: ({ children }) => <li className="text-sm">{children}</li>,
+                      strong: ({ children }) => <strong className="font-black">{children}</strong>,
+                      code: ({ children }) => <code className="bg-muted px-1.5 py-0.5 rounded-md font-mono text-xs">{children}</code>
+                    }}
+                  >
+                    {m.content}
+                  </ReactMarkdown>
                 </div>
                 
                 {/* Options Chips */}

@@ -132,19 +132,21 @@ async function handler(req: Request): Promise<Response> {
       });
     }
 
-    // Verify auth for all other endpoints
+    // Handle guest sessions (no auth required) and authenticated users
+    let userId: string;
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return errorResponse("Authorization header missing", "UNAUTHORIZED", 401);
-    }
-    
-    const auth = await blink.auth.verifyToken(authHeader);
-    
-    if (!auth.valid) {
-      return errorResponse("Unauthorized", "UNAUTHORIZED", 401);
-    }
 
-    const userId = auth.userId!;
+    if (authHeader) {
+      // Authenticated user
+      const auth = await blink.auth.verifyToken(authHeader);
+      if (!auth.valid) {
+        return errorResponse("Unauthorized", "UNAUTHORIZED", 401);
+      }
+      userId = auth.userId!;
+    } else {
+      // Guest user - use a default guest user ID
+      userId = 'guest_user';
+    }
 
     // ==========================================================================
     // ROUTE ENDPOINTS

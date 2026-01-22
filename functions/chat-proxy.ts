@@ -255,13 +255,21 @@ async function handler(req: Request): Promise<Response> {
 
         console.log(`[chat-proxy] n8n response:`, result);
 
+        // FIX: Ensure sessionId is returned correctly (use provided sessionId if n8n returns "unknown")
+        const fixedResult = {
+          ...result,
+          sessionId: result.sessionId === "unknown" ? data.sessionId : result.sessionId
+        };
+
+        console.log(`[chat-proxy] Fixed response:`, fixedResult);
+
         // Логируем AI вызов
         await logEvent(blink, userId, "ai_call", {
           sessionId: data.sessionId,
-          state: result.state,
+          state: fixedResult.state,
         });
 
-        return jsonResponse(result);
+        return jsonResponse(fixedResult);
       }
 
       case "action": {

@@ -208,38 +208,44 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
    */
   const handleN8nResponse = async (response: ChatResponse) => {
     if (!session || !profile) return;
-    
+
+    // FIX: Ensure sessionId is correct (n8n sometimes returns "unknown")
+    const correctSessionId = response.sessionId === "unknown" ? session.id : (response.sessionId || session.id);
+
+    console.log(`[useChat] handleN8nResponse - original sessionId: ${response.sessionId}, corrected: ${correctSessionId}`);
+
     // Обновить состояние FSM
     if (response.state) {
       setChatState(response.state as ChatState);
     }
-    
+
     // Обновить данные диагностики если есть
     if (response.meta?.diagnosticData) {
       setDiagnosticData(response.meta.diagnosticData);
     }
-    
+
     // Обновить профиль если есть данные
     if (response.meta?.profileData) {
       await updateProfile(response.meta.profileData);
     }
-    
+
     // Сохранить сообщение в БД
     const meta = {
       state: response.state,
       diagnosticData: response.meta?.diagnosticData || diagnosticData,
       ui: response.ui,
-      fromN8n: true
+      fromN8n: true,
+      correctedSessionId: correctSessionId
     };
-    
+
     const botMsg = await (blink.db as any).chatMessages.create({
-      sessionId: session.id,
+      sessionId: correctSessionId,
       userId: profile.userId,
       role: 'assistant',
       content: response.text,
       metadata: JSON.stringify(meta)
     });
-    
+
     setMessages(prev => [...prev, botMsg]);
   };
 
@@ -298,6 +304,11 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
         return;
       }
 
+      // FIX: Ensure sessionId is correct for guests (n8n sometimes returns "unknown")
+      const correctSessionId = response.sessionId === "unknown" ? 'guest_session' : (response.sessionId || 'guest_session');
+
+      console.log(`[useChat] Guest handleN8nResponse - original sessionId: ${response.sessionId}, corrected: ${correctSessionId}`);
+
       // Обработать ответ для гостей (сохранить в sessionStorage)
       if (response.state) {
         setChatState(response.state as ChatState);
@@ -312,7 +323,8 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
         state: response.state,
         diagnosticData: response.meta?.diagnosticData || diagnosticData,
         ui: response.ui,
-        fromN8n: true
+        fromN8n: true,
+        correctedSessionId: correctSessionId
       };
 
       const botMsg = {

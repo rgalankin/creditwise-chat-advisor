@@ -223,19 +223,20 @@ async function handler(req: Request): Promise<Response> {
         const messageN8nSecret = Deno.env.get("N8N_WEBHOOK_SECRET");
         console.log(`[chat-proxy] Message endpoint env check: n8nUrl=${messageN8nUrl ? 'SET (' + messageN8nUrl + ')' : 'NOT_SET'}, n8nSecret=${messageN8nSecret ? 'SET' : 'NOT_SET'}`);
 
-        // TEMPORARY: Always use fallback for testing
-        console.log(`[chat-proxy] Message endpoint: FORCED FALLBACK for testing`);
-        const testResponse = {
-          text: "TEST RESPONSE - Session ID should be: " + data.sessionId,
-          state: "CHAT",
-          sessionId: data.sessionId || "NO_SESSION_ID_PROVIDED",
-          ui: [],
-          meta: {
-            event: { type: "message_processed" },
-            test: true
-          }
-        };
-        return jsonResponse(testResponse);
+        // If no n8n config for message endpoint, use fallback
+        if (!messageN8nUrl) {
+          console.log(`[chat-proxy] Message endpoint: n8n not configured, using fallback`);
+          const fallbackResponse = {
+            text: "Hello! How can I assist you today?",
+            state: "CHAT",
+            sessionId: data.sessionId || `fallback_${Date.now()}`, // Return the provided sessionId
+            ui: [],
+            meta: {
+              event: { type: "message_processed" }
+            }
+          };
+          return jsonResponse(fallbackResponse);
+        }
 
         // Отправить сообщение
         if (!data.sessionId || !data.content) {

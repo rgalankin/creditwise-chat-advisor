@@ -7,8 +7,24 @@ export function useProfile() {
 
   const fetchProfile = async () => {
     try {
-      const user = await blink.auth.me();
+      // blink.auth.me() throws BlinkAuthError when not authenticated
+      // We need to catch that and treat it as guest mode
+      let user = null;
+      try {
+        user = await blink.auth.me();
+      } catch (authError: any) {
+        // BlinkAuthError with code INVALID_CREDENTIALS means not authenticated
+        // This is expected behavior for guests - not an error
+        if (authError?.code === 'INVALID_CREDENTIALS' || authError?.message?.includes('Not authenticated')) {
+          user = null;
+        } else {
+          // Re-throw unexpected errors
+          throw authError;
+        }
+      }
+      
       if (!user) {
+        // Set guest profile
         setProfile({
           displayName: 'Guest',
           jurisdiction: 'Russia',
@@ -35,6 +51,14 @@ export function useProfile() {
       setProfile(userProfile);
     } catch (error) {
       console.error('Error fetching profile:', error);
+      // On any error, fall back to guest profile
+      setProfile({
+        displayName: 'Guest',
+        jurisdiction: 'Russia',
+        hasConsent: "0",
+        financialData: null,
+        createdAt: new Date().toISOString()
+      });
     } finally {
       setLoading(false);
     }

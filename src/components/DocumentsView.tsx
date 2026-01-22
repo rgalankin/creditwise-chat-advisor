@@ -23,8 +23,24 @@ export function DocumentsView({ isGuestMode = false, onLogin }: DocumentsViewPro
       return;
     }
     try {
-      const user = await blink.auth.me();
-      if (!user) return;
+      // blink.auth.me() throws when not authenticated
+      let user = null;
+      try {
+        user = await blink.auth.me();
+      } catch (authError: any) {
+        // Not authenticated - treat as guest mode
+        if (authError?.code === 'INVALID_CREDENTIALS' || authError?.message?.includes('Not authenticated')) {
+          setLoading(false);
+          return;
+        }
+        throw authError;
+      }
+      
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+      
       const docs = await (blink.db as any).userDocuments.list({
         where: { userId: user.id },
         orderBy: { createdAt: 'desc' }

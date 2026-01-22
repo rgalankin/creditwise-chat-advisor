@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { blink } from '../lib/blink';
 import { Sidebar } from './Sidebar';
 import { ChatWindow } from './ChatWindow';
 import { useProfile } from '../hooks/useProfile';
@@ -30,9 +31,14 @@ export function ChatDashboard({ isGuestMode = false, onLogin }: ChatDashboardPro
 
   useEffect(() => {
     const checkAdmin = async () => {
-      const user = await blink.auth.me();
-      if (user?.role === 'admin' || user?.email === 'admin@credoserv.ru') {
-        setIsAdmin(true);
+      try {
+        const user = await blink.auth.me();
+        if (user?.role === 'admin' || user?.email === 'admin@credoserv.ru') {
+          setIsAdmin(true);
+        }
+      } catch (error) {
+        // Not authenticated or other error - just keep isAdmin false
+        setIsAdmin(false);
       }
     };
     checkAdmin();

@@ -15,18 +15,22 @@ export const useCredits = () => {
     }
 
     try {
-      // user_id is the PK, so use get() to fetch by primary key
-      const record = await (blink.db as any).userCredits.get(user.id);
+      // user_credits uses user_id as the primary key (not id)
+      // Use list with filter to fetch by user_id
+      const records = await (blink.db as any).userCredits.list({
+        filter: { userId: user.id },
+        limit: 1
+      });
 
-      if (!record) {
-        // Initialize with 100 free credits - create new record with user_id as PK
+      if (!records || records.length === 0) {
+        // Initialize with 100 free credits - create new record with userId as PK
         const newRecord = await (blink.db as any).userCredits.create({
-          id: user.id, // user_id is the PK, passed as 'id' for SDK
+          userId: user.id, // Maps to user_id column (PK)
           credits: 100
         });
         setCredits(Number(newRecord.credits));
       } else {
-        setCredits(Number(record.credits));
+        setCredits(Number(records[0].credits));
       }
     } catch (error) {
       console.error('Failed to fetch credits:', error);
@@ -49,8 +53,9 @@ export const useCredits = () => {
 
     try {
       const newCredits = credits - 1;
-      // user_id is the PK, use update() with user.id as the record ID
-      await (blink.db as any).userCredits.update(user.id, {
+      // Use upsert to update by userId (which is the PK)
+      await (blink.db as any).userCredits.upsert({
+        userId: user.id,
         credits: newCredits
       });
       setCredits(newCredits);
@@ -66,8 +71,9 @@ export const useCredits = () => {
 
     try {
       const newCredits = credits + amount;
-      // user_id is the PK, use update() with user.id as the record ID
-      await (blink.db as any).userCredits.update(user.id, {
+      // Use upsert to update by userId (which is the PK)
+      await (blink.db as any).userCredits.upsert({
+        userId: user.id,
         credits: newCredits
       });
       setCredits(newCredits);

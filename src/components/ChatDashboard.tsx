@@ -6,11 +6,22 @@ import { ProfileView } from './ProfileView';
 import { DocumentsView } from './DocumentsView';
 import { AdminPanel } from './AdminPanel';
 import { PricingPage } from './PricingPage';
+import { ScenarioSelectionScreen, ScenarioType } from './ScenarioSelectionScreen';
+import { ScenarioWizard, ScenarioResult } from './ScenarioWizard';
+import { ScenarioSummary } from './ScenarioSummary';
+
+type ActiveTab = 'chat' | 'profile' | 'documents' | 'admin' | 'pricing' | 'scenarios';
+type ScenarioView = 'selection' | 'wizard' | 'summary';
 
 export function ChatDashboard() {
-  const [activeTab, setActiveTab] = useState<'chat' | 'profile' | 'documents' | 'admin' | 'pricing'>('chat');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('chat');
   const { profile, loading, updateProfile } = useProfile();
   const [isAdmin, setIsAdmin] = useState(false);
+  
+  // Scenario state
+  const [scenarioView, setScenarioView] = useState<ScenarioView>('selection');
+  const [selectedScenario, setSelectedScenario] = useState<ScenarioType | null>(null);
+  const [scenarioResult, setScenarioResult] = useState<ScenarioResult | null>(null);
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -22,7 +33,77 @@ export function ChatDashboard() {
     checkAdmin();
   }, []);
 
+  // Reset scenario state when switching tabs
+  useEffect(() => {
+    if (activeTab !== 'scenarios') {
+      setScenarioView('selection');
+      setSelectedScenario(null);
+      setScenarioResult(null);
+    }
+  }, [activeTab]);
+
+  const handleSelectScenario = (scenario: ScenarioType) => {
+    setSelectedScenario(scenario);
+    setScenarioView('wizard');
+  };
+
+  const handleScenarioComplete = (result: ScenarioResult) => {
+    setScenarioResult(result);
+    setScenarioView('summary');
+  };
+
+  const handleBackFromWizard = () => {
+    setSelectedScenario(null);
+    setScenarioView('selection');
+  };
+
+  const handleBackFromSummary = () => {
+    setScenarioView('wizard');
+  };
+
+  const handleNewScenario = () => {
+    setSelectedScenario(null);
+    setScenarioResult(null);
+    setScenarioView('selection');
+  };
+
+  const handleStartChatFromSummary = () => {
+    setActiveTab('chat');
+  };
+
   if (loading) return null;
+
+  const renderScenarioContent = () => {
+    switch (scenarioView) {
+      case 'selection':
+        return (
+          <ScenarioSelectionScreen 
+            onSelectScenario={handleSelectScenario}
+            onBack={() => setActiveTab('chat')}
+          />
+        );
+      case 'wizard':
+        return selectedScenario ? (
+          <ScenarioWizard
+            scenario={selectedScenario}
+            onComplete={handleScenarioComplete}
+            onBack={handleBackFromWizard}
+            profile={profile}
+          />
+        ) : null;
+      case 'summary':
+        return scenarioResult ? (
+          <ScenarioSummary
+            result={scenarioResult}
+            onBack={handleBackFromSummary}
+            onStartChat={handleStartChatFromSummary}
+            onNewScenario={handleNewScenario}
+          />
+        ) : null;
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="flex h-screen bg-background text-foreground">
@@ -38,6 +119,7 @@ export function ChatDashboard() {
         {activeTab === 'documents' && <DocumentsView />}
         {activeTab === 'admin' && isAdmin && <AdminPanel />}
         {activeTab === 'pricing' && <PricingPage />}
+        {activeTab === 'scenarios' && renderScenarioContent()}
       </main>
     </div>
   );

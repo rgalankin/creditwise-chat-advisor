@@ -1,5 +1,5 @@
 import { Button } from './ui/button';
-import { MessageSquare, User, FileText, Settings, LogOut, Shield, LayoutDashboard, Globe, Wallet, CreditCard, Info } from 'lucide-react';
+import { MessageSquare, User, FileText, Settings, LogOut, Shield, LayoutDashboard, Globe, Wallet, CreditCard, Info, Sparkles } from 'lucide-react';
 import { blink } from '../lib/blink';
 import { cn } from '../lib/utils';
 import { useLanguage } from '../lib/i18n';
@@ -7,8 +7,8 @@ import { useCredits } from '../hooks/useCredits';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 interface SidebarProps {
-  activeTab: 'chat' | 'profile' | 'documents' | 'admin' | 'pricing';
-  setActiveTab: (tab: 'chat' | 'profile' | 'documents' | 'admin' | 'pricing') => void;
+  activeTab: 'chat' | 'profile' | 'documents' | 'admin' | 'pricing' | 'scenarios';
+  setActiveTab: (tab: 'chat' | 'profile' | 'documents' | 'admin' | 'pricing' | 'scenarios') => void;
   isAdmin?: boolean;
 }
 
@@ -18,6 +18,7 @@ export function Sidebar({ activeTab, setActiveTab, isAdmin }: SidebarProps) {
 
   const navItems = [
     { id: 'chat', label: language === 'ru' ? 'Начать чат' : 'Start Chat', icon: MessageSquare },
+    { id: 'scenarios', label: language === 'ru' ? 'Сценарии' : 'Scenarios', icon: Sparkles },
     { id: 'profile', label: language === 'ru' ? 'Профиль' : 'Profile', icon: User },
     { id: 'documents', label: language === 'ru' ? 'Документы' : 'Documents', icon: FileText },
     { id: 'pricing', label: language === 'ru' ? 'Улучшить' : 'Upgrade', icon: CreditCard },

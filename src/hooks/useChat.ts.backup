@@ -62,7 +62,7 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
     } else {
       switch (state) {
         case 'INTRO':
-          return "I will help you understand your credit situation and suggest a safe course of action. \n\nIt will take 5–7 minutes, documents are not needed at the start. \n\nIn demo mode, do not enter personal data.";
+          return "I will help you understand your credit situation and suggest a safe course of action. \n\nIt will take **5–7 minutes**, documents are not needed at the start. \n\nIn demo mode, **do not enter personal data**.";
         case 'CONSENT':
           return "To continue, consent to data processing is required. Information is used only for preparing recommendations.";
         case 'JURISDICTION':

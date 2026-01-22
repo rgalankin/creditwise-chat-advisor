@@ -15,22 +15,18 @@ export const useCredits = () => {
     }
 
     try {
-      // user_credits uses user_id as the primary key (not id)
-      // Use list with filter to fetch by user_id
-      const records = await (blink.db as any).userCredits.list({
-        filter: { userId: user.id },
-        limit: 1
-      });
+      // Fetch credits record by user_id (the table uses user_id as PK)
+      const record = await (blink.db as any).userCredits.get(user.id);
 
-      if (!records || records.length === 0) {
-        // Initialize with 100 free credits - use upsert since user_id is PK (no auto id)
-        await (blink.db as any).userCredits.upsert({
-          userId: user.id, // Maps to user_id column (PK)
+      if (!record) {
+        // Initialize with 100 free credits - create new record
+        await (blink.db as any).userCredits.create({
+          id: user.id, // Use id field which maps to user_id PK
           credits: 100
         });
         setCredits(100);
       } else {
-        setCredits(Number(records[0].credits));
+        setCredits(Number(record.credits));
       }
     } catch (error) {
       console.error('Failed to fetch credits:', error);
@@ -53,9 +49,8 @@ export const useCredits = () => {
 
     try {
       const newCredits = credits - 1;
-      // Use upsert to update by userId (which is the PK)
-      await (blink.db as any).userCredits.upsert({
-        userId: user.id,
+      // Update credits using the user.id as the record ID
+      await (blink.db as any).userCredits.update(user.id, {
         credits: newCredits
       });
       setCredits(newCredits);
@@ -71,9 +66,8 @@ export const useCredits = () => {
 
     try {
       const newCredits = credits + amount;
-      // Use upsert to update by userId (which is the PK)
-      await (blink.db as any).userCredits.upsert({
-        userId: user.id,
+      // Update credits using the user.id as the record ID
+      await (blink.db as any).userCredits.update(user.id, {
         credits: newCredits
       });
       setCredits(newCredits);

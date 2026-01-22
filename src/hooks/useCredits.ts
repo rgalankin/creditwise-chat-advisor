@@ -16,17 +16,20 @@ export const useCredits = () => {
 
     try {
       // Fetch credits record by user_id (the table uses user_id as PK)
-      const record = await (blink.db as any).userCredits.get(user.id);
+      const records = await (blink.db as any).userCredits.list({
+        where: { userId: user.id },
+        limit: 1
+      });
 
-      if (!record) {
+      if (!records || records.length === 0) {
         // Initialize with 100 free credits - create new record
         await (blink.db as any).userCredits.create({
-          id: user.id, // Use id field which maps to user_id PK
+          userId: user.id,
           credits: 100
         });
         setCredits(100);
       } else {
-        setCredits(Number(record.credits));
+        setCredits(Number(records[0].credits));
       }
     } catch (error) {
       console.error('Failed to fetch credits:', error);
@@ -49,8 +52,9 @@ export const useCredits = () => {
 
     try {
       const newCredits = credits - 1;
-      // Update credits using the user.id as the record ID
-      await (blink.db as any).userCredits.update(user.id, {
+      // Use upsert with userId as the key
+      await (blink.db as any).userCredits.upsert({
+        userId: user.id,
         credits: newCredits
       });
       setCredits(newCredits);
@@ -66,8 +70,9 @@ export const useCredits = () => {
 
     try {
       const newCredits = credits + amount;
-      // Update credits using the user.id as the record ID
-      await (blink.db as any).userCredits.update(user.id, {
+      // Use upsert with userId as the key
+      await (blink.db as any).userCredits.upsert({
+        userId: user.id,
         credits: newCredits
       });
       setCredits(newCredits);

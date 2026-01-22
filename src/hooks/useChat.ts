@@ -275,6 +275,62 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
   };
 
   /**
+   * Отправить сообщение через n8n API (для гостей)
+   */
+  const sendMessageViaN8nGuest = async (content: string) => {
+    setIsLoading(true);
+    try {
+      const response = await chatApi.sendMessage({
+        sessionId: 'guest_session',
+        content,
+        language: language as 'ru' | 'en'
+      });
+
+      // Обработать ответ для гостей (сохранить в sessionStorage)
+      if (response.state) {
+        setChatState(response.state as ChatState);
+      }
+
+      if (response.meta?.diagnosticData) {
+        setDiagnosticData(response.meta.diagnosticData);
+      }
+
+      // Сохранить ответ в sessionStorage
+      const meta = {
+        state: response.state,
+        diagnosticData: response.meta?.diagnosticData || diagnosticData,
+        ui: response.ui,
+        fromN8n: true
+      };
+
+      const botMsg = {
+        id: `msg_guest_${Date.now()}`,
+        role: 'assistant',
+        content: response.text,
+        metadata: JSON.stringify(meta),
+        createdAt: new Date().toISOString()
+      };
+
+      const updatedMessages = [...messages, botMsg];
+      setMessages(updatedMessages);
+
+      const guestData = JSON.parse(sessionStorage.getItem(GUEST_SESSION_KEY) || '{}');
+      sessionStorage.setItem(GUEST_SESSION_KEY, JSON.stringify({
+        ...guestData,
+        messages: updatedMessages,
+        chatState: response.state || chatState,
+        diagnosticData: response.meta?.diagnosticData || diagnosticData
+      }));
+
+    } catch (error) {
+      console.error('[useChat] Guest n8n error:', error);
+      toast.error('Ошибка соединения. Попробуйте ещё раз.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
    * Отправить действие через n8n API (для кнопок)
    */
   const sendAction = async (action: string, payload?: Record<string, any>) => {
@@ -459,12 +515,8 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
         messages: updatedMessages
       }));
 
-      // Выбрать режим обработки
-      if (apiMode === 'n8n') {
-        // ... handled in sendMessageViaN8n
-      } else {
-        await sendMessageLocal(content);
-      }
+      // Всегда использовать n8n API для гостей
+      await sendMessageViaN8nGuest(content);
       return;
     }
 

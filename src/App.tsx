@@ -44,7 +44,7 @@ export default function App() {
   if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
-        <Spinner size="lg" />
+        <Spinner className="w-8 h-8" />
       </div>
     );
   }

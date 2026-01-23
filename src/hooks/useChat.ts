@@ -450,10 +450,17 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
         
         setMessages(prev => [...prev, initialBotMsg]);
 
+        // Get current messages for context (use functional state to get latest)
+        let currentMessages: any[] = [];
+        setMessages(prev => {
+          currentMessages = prev;
+          return prev;
+        });
+
         await blink.ai.streamText({
           messages: [
             { role: 'system', content: systemPrompt },
-            ...messages.map(m => ({ role: m.role, content: m.content })),
+            ...currentMessages.filter(m => m.id !== botMsgId).map(m => ({ role: m.role, content: m.content })),
             { role: 'user', content }
           ]
         }, (chunk) => {
@@ -461,25 +468,25 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
           setMessages(prev => prev.map(m => m.id === botMsgId ? { ...m, content: fullResponse } : m));
         });
 
-        // Final update and storage
-        const finalMessages = messages.concat({
-          id: botMsgId,
-          role: 'assistant',
-          content: fullResponse,
-          metadata: JSON.stringify({ state: 'CHAT', diagnosticData }),
-          createdAt: new Date().toISOString()
+        // Final update and storage - use functional update to get latest messages
+        setMessages(prev => {
+          const finalMessages = prev.map(m => 
+            m.id === botMsgId 
+              ? { ...m, content: fullResponse, isStreaming: false }
+              : m
+          );
+          
+          const guestData = JSON.parse(sessionStorage.getItem(GUEST_SESSION_KEY) || '{}');
+          sessionStorage.setItem(GUEST_SESSION_KEY, JSON.stringify({
+            ...guestData,
+            messages: finalMessages,
+            chatState: 'CHAT',
+            diagnosticData
+          }));
+          
+          return finalMessages;
         });
-        
-        setMessages(finalMessages);
         setChatState('CHAT');
-
-        const guestData = JSON.parse(sessionStorage.getItem(GUEST_SESSION_KEY) || '{}');
-        sessionStorage.setItem(GUEST_SESSION_KEY, JSON.stringify({
-          ...guestData,
-          messages: finalMessages,
-          chatState: 'CHAT',
-          diagnosticData
-        }));
         
         return; // Success, already updated state
       } catch (error) {
@@ -636,12 +643,20 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
         let fullResponse = '';
         const botMsgId = `msg_a_${Date.now()}`;
         
+        // Add empty streaming message
         setMessages(prev => [...prev, { id: botMsgId, role: 'assistant', content: '', isStreaming: true }]);
+
+        // Get current messages for context (use functional state to get latest)
+        let currentMessages: any[] = [];
+        setMessages(prev => {
+          currentMessages = prev;
+          return prev;
+        });
 
         await blink.ai.streamText({
           messages: [
             { role: 'system', content: systemPrompt },
-            ...messages.map(m => ({ role: m.role, content: m.content })),
+            ...currentMessages.filter(m => m.id !== botMsgId).map(m => ({ role: m.role, content: m.content })),
             { role: 'user', content }
           ]
         }, (chunk) => {
@@ -649,6 +664,7 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
           setMessages(prev => prev.map(m => m.id === botMsgId ? { ...m, content: fullResponse } : m));
         });
 
+        // Save to database
         const finalBotMsg = await (blink.db as any).chatMessages.create({
           sessionId: session.id,
           userId: profile?.userId,
@@ -657,6 +673,7 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
           metadata: JSON.stringify({ state: 'CHAT', diagnosticData })
         });
 
+        // Replace streaming message with final message from DB
         setMessages(prev => prev.map(m => m.id === botMsgId ? finalBotMsg : m));
         setChatState('CHAT');
       } catch (error) {

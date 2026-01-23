@@ -30,7 +30,7 @@ export function PricingPage() {
       id: 'pro',
       name: 'Pro',
       desc: 'Глубокий анализ',
-      price: '29',
+      price: '2900',
       credits: '1000',
       features: [
         'Глубокий анализ КИ',
@@ -46,7 +46,7 @@ export function PricingPage() {
       id: 'unlimited',
       name: 'Business',
       desc: 'Полное сопровождение',
-      price: '99',
+      price: '9900',
       credits: '∞',
       features: [
         'Безлимитный AI-чат',

@@ -62,13 +62,15 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
     const isGuest = !profile || profile.displayName === 'Guest';
 
     if (isGuest) {
+      // Always set session for guests
+      setSession({ id: 'guest_session' });
+      
       const guestSession = sessionStorage.getItem(GUEST_SESSION_KEY);
       if (guestSession) {
         const data = JSON.parse(guestSession);
         setMessages(data.messages || []);
         setChatState(data.chatState || 'INTRO');
         setDiagnosticData(data.diagnosticData || {});
-        setSession({ id: 'guest_session' });
         
         if (!data.messages || data.messages.length === 0) {
           const greeting = {
@@ -83,6 +85,21 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
             messages: [greeting]
           }));
         }
+      } else {
+        // Initialize new guest session with greeting
+        const greeting = {
+          id: `msg_guest_${Date.now()}`,
+          role: 'assistant',
+          content: getInitialMessage('INTRO'),
+          createdAt: new Date().toISOString()
+        };
+        setMessages([greeting]);
+        setChatState('INTRO');
+        sessionStorage.setItem(GUEST_SESSION_KEY, JSON.stringify({
+          messages: [greeting],
+          chatState: 'INTRO',
+          diagnosticData: {}
+        }));
       }
       return;
     }
@@ -384,16 +401,28 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
     let updatedDiagData = diagnosticData;
 
     if (chatState === 'INTRO') {
-      nextState = 'CONSENT';
-      responseText = getInitialMessage('CONSENT');
+      // Переход на согласие при любом действии "Начать"
+      if (content.toLowerCase().includes('начать') || content.toLowerCase().includes('диагностик') || content.toLowerCase().includes('start')) {
+        nextState = 'CONSENT';
+        responseText = getInitialMessage('CONSENT');
+      } else {
+        // Для любых других сообщений в INTRO - объясняем что нужно начать
+        responseText = "Чтобы начать диагностику вашей финансовой ситуации, нажмите кнопку **\"Начать диагностику\"** ниже.";
+        nextState = 'INTRO';
+      }
     } else if (chatState === 'CONSENT') {
-      if (content.toLowerCase().includes('согласен') || content.toLowerCase().includes('да') || content.toLowerCase().includes('agree') || content.toLowerCase().includes('yes')) {
+      // Проверяем согласие - включая текст кнопки "Предоставить согласие"
+      const consentPhrases = ['согласен', 'согласие', 'да', 'agree', 'yes', 'предоставить', 'принимаю', 'accept'];
+      const hasConsent = consentPhrases.some(phrase => content.toLowerCase().includes(phrase));
+      
+      if (hasConsent) {
         const qObj = getDiagnosticQuestion(1);
         nextState = 'DIAGNOSTIC_1';
-        responseText = qObj.q;
+        responseText = `Отлично! Согласие принято. Начинаем диагностику.\n\n${qObj.q}`;
       } else {
-        nextState = 'INTRO';
-        responseText = "Для продолжения необходимо ваше согласие.";
+        // Остаемся на CONSENT, не переходим на INTRO
+        nextState = 'CONSENT';
+        responseText = "Для продолжения диагностики необходимо ваше согласие на обработку данных. Нажмите **\"Предоставить согласие\"**, чтобы продолжить.";
       }
     } else if (chatState.startsWith('DIAGNOSTIC_')) {
       const currentStep = parseInt(chatState.split('_')[1]);
@@ -408,6 +437,10 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
         nextState = 'SUMMARY';
         responseText = `Диагностика завершена! Вот краткий анализ вашей ситуации:\n\n**Ваши ответы:**\n${Object.entries(updatedDiagData).map(([k, v]) => `• ${k}: ${v}`).join('\n')}\n\n**Рекомендации:**\n1. Рассмотрите варианты рефинансирования\n2. Проверьте свою кредитную историю\n3. Составьте план погашения долгов\n\nДля более детального анализа зарегистрируйтесь в системе.`;
       }
+    } else if (chatState === 'SUMMARY') {
+      // После summary - переход в свободный чат
+      responseText = "Спасибо за ваш вопрос! Для получения более подробных рекомендаций зарегистрируйтесь в системе.\n\nМогу порекомендовать:\n• Проверить свою кредитную историю\n• Рассмотреть варианты рефинансирования\n• Составить план погашения долгов";
+      nextState = 'SUMMARY';
     } else {
       // Free chat - simple response for guests
       responseText = "Для получения персонализированных рекомендаций, пожалуйста, завершите диагностику или зарегистрируйтесь в системе.";
@@ -501,14 +534,25 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
 
     // FSM Logic
     if (chatState === 'INTRO') {
-      await moveToState('CONSENT', getInitialMessage('CONSENT'));
+      // Переход на согласие при любом действии "Начать"
+      if (content.toLowerCase().includes('начать') || content.toLowerCase().includes('диагностик') || content.toLowerCase().includes('start')) {
+        await moveToState('CONSENT', getInitialMessage('CONSENT'));
+      } else {
+        // Для любых других сообщений в INTRO - объясняем что нужно начать
+        await moveToState('INTRO', "Чтобы начать диагностику вашей финансовой ситуации, нажмите кнопку **\"Начать диагностику\"** ниже.");
+      }
     } else if (chatState === 'CONSENT') {
-      if (content.toLowerCase().includes('согласен') || content.toLowerCase().includes('да') || content.toLowerCase().includes('agree') || content.toLowerCase().includes('yes')) {
+      // Проверяем согласие - включая текст кнопки "Предоставить согласие"
+      const consentPhrases = ['согласен', 'согласие', 'да', 'agree', 'yes', 'предоставить', 'принимаю', 'accept'];
+      const hasConsent = consentPhrases.some(phrase => content.toLowerCase().includes(phrase));
+      
+      if (hasConsent) {
         await updateProfile({ hasConsent: 1, jurisdiction: 'Russia' });
         const qObj = getDiagnosticQuestion(1);
-        await moveToState('DIAGNOSTIC_1', qObj.q);
+        await moveToState('DIAGNOSTIC_1', `Отлично! Согласие принято. Начинаем диагностику.\n\n${qObj.q}`);
       } else {
-        await moveToState('INTRO', "Для продолжения необходимо ваше согласие.");
+        // Остаемся на CONSENT, не переходим на INTRO
+        await moveToState('CONSENT', "Для продолжения диагностики необходимо ваше согласие на обработку данных. Нажмите **\"Предоставить согласие\"**, чтобы продолжить.");
       }
     } else if (chatState.startsWith('DIAGNOSTIC_')) {
       const currentStep = parseInt(chatState.split('_')[1]);

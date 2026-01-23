@@ -183,18 +183,24 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
           metadata: JSON.stringify(meta),
           createdAt: new Date().toISOString()
         };
-        const updatedMessages = [...messages, botMsg];
-        setMessages(updatedMessages);
+        
+        // Use functional update to get latest messages
+        setMessages(prev => {
+          const updatedMessages = [...prev, botMsg];
+          
+          const guestData = JSON.parse(sessionStorage.getItem(GUEST_SESSION_KEY) || '{}');
+          sessionStorage.setItem(GUEST_SESSION_KEY, JSON.stringify({
+            ...guestData,
+            messages: updatedMessages,
+            chatState: nextState,
+            diagnosticData: updatedDiagData || diagnosticData
+          }));
+          
+          return updatedMessages;
+        });
+        
         setChatState(nextState);
         if (updatedDiagData) setDiagnosticData(updatedDiagData);
-        
-        const guestData = JSON.parse(sessionStorage.getItem(GUEST_SESSION_KEY) || '{}');
-        sessionStorage.setItem(GUEST_SESSION_KEY, JSON.stringify({
-          ...guestData,
-          messages: updatedMessages,
-          chatState: nextState,
-          diagnosticData: updatedDiagData || diagnosticData
-        }));
         return;
       }
 
@@ -346,16 +352,21 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
         createdAt: new Date().toISOString()
       };
 
-      const updatedMessages = [...messages, botMsg];
-      setMessages(updatedMessages);
-
-      const guestData = JSON.parse(sessionStorage.getItem(GUEST_SESSION_KEY) || '{}');
-      sessionStorage.setItem(GUEST_SESSION_KEY, JSON.stringify({
-        ...guestData,
-        messages: updatedMessages,
-        chatState: response.state || chatState,
-        diagnosticData: response.meta?.diagnosticData || diagnosticData
-      }));
+      // Use functional update to get latest messages (including user message added in sendMessage)
+      setMessages(prev => {
+        const updatedMessages = [...prev, botMsg];
+        
+        // Save to sessionStorage with the updated messages
+        const guestData = JSON.parse(sessionStorage.getItem(GUEST_SESSION_KEY) || '{}');
+        sessionStorage.setItem(GUEST_SESSION_KEY, JSON.stringify({
+          ...guestData,
+          messages: updatedMessages,
+          chatState: response.state || chatState,
+          diagnosticData: response.meta?.diagnosticData || diagnosticData
+        }));
+        
+        return updatedMessages;
+      });
 
     } catch (error) {
       console.error('[useChat] Guest n8n error, falling back to local mode:', error);
@@ -381,14 +392,19 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
         metadata: JSON.stringify({ state: chatState, diagnosticData }),
         createdAt: new Date().toISOString()
       };
-      const updatedMessages = [...messages, botMsg];
-      setMessages(updatedMessages);
       
-      const guestData = JSON.parse(sessionStorage.getItem(GUEST_SESSION_KEY) || '{}');
-      sessionStorage.setItem(GUEST_SESSION_KEY, JSON.stringify({
-        ...guestData,
-        messages: updatedMessages
-      }));
+      // Use functional update to get latest messages
+      setMessages(prev => {
+        const updatedMessages = [...prev, botMsg];
+        
+        const guestData = JSON.parse(sessionStorage.getItem(GUEST_SESSION_KEY) || '{}');
+        sessionStorage.setItem(GUEST_SESSION_KEY, JSON.stringify({
+          ...guestData,
+          messages: updatedMessages
+        }));
+        
+        return updatedMessages;
+      });
       return;
     }
 
@@ -490,18 +506,24 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
       createdAt: new Date().toISOString()
     };
 
-    const updatedMessages = [...messages, botMsg];
-    setMessages(updatedMessages);
+    // Use functional update to get latest messages (including user message added in sendMessage)
+    setMessages(prev => {
+      const updatedMessages = [...prev, botMsg];
+      
+      // Save to sessionStorage
+      const guestData = JSON.parse(sessionStorage.getItem(GUEST_SESSION_KEY) || '{}');
+      sessionStorage.setItem(GUEST_SESSION_KEY, JSON.stringify({
+        ...guestData,
+        messages: updatedMessages,
+        chatState: nextState,
+        diagnosticData: updatedDiagData
+      }));
+      
+      return updatedMessages;
+    });
+    
     setChatState(nextState);
     setDiagnosticData(updatedDiagData);
-
-    const guestData = JSON.parse(sessionStorage.getItem(GUEST_SESSION_KEY) || '{}');
-    sessionStorage.setItem(GUEST_SESSION_KEY, JSON.stringify({
-      ...guestData,
-      messages: updatedMessages,
-      chatState: nextState,
-      diagnosticData: updatedDiagData
-    }));
   };
 
   /**

@@ -44,6 +44,15 @@ interface N8nConfig {
   secretKey: string;
 }
 
+class N8nError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "N8nError";
+    this.status = status;
+  }
+}
+
 async function callN8n(
   config: N8nConfig,
   endpoint: string,
@@ -68,7 +77,7 @@ async function callN8n(
 
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`n8n error: ${response.status} - ${text}`);
+    throw new N8nError(`n8n error: ${response.status} - ${text}`, response.status);
   }
 
   const jsonData = await response.json();
@@ -77,7 +86,7 @@ async function callN8n(
   if (Array.isArray(jsonData)) {
     console.log(`[chat-proxy] n8n returned array with ${jsonData.length} elements, extracting first element`);
     if (jsonData.length === 0) {
-      throw new Error("n8n returned empty array");
+      throw new N8nError("n8n returned empty array", 500);
     }
     return jsonData[0];
   }
@@ -285,60 +294,110 @@ User's language: ${data.language || 'ru'}`;
         console.log(`[chat-proxy] MESSAGE ENDPOINT START - data:`, data);
         console.log(`[chat-proxy] Processing message endpoint with sessionId: ${data.sessionId}`);
 
-        // Double-check environment variables for message endpoint
-        const messageN8nUrl = Deno.env.get("N8N_WEBHOOK_URL");
-        const messageN8nSecret = Deno.env.get("N8N_WEBHOOK_SECRET");
-        console.log(`[chat-proxy] Message endpoint env check: n8nUrl=${messageN8nUrl ? 'SET (' + messageN8nUrl + ')' : 'NOT_SET'}, n8nSecret=${messageN8nSecret ? 'SET' : 'NOT_SET'}`);
-
-        // If no n8n config for message endpoint, use fallback
-        if (!messageN8nUrl) {
-          console.log(`[chat-proxy] Message endpoint: n8n not configured, using fallback`);
-          const fallbackResponse = {
-            text: "Hello! How can I assist you today?",
-            state: "CHAT",
-            sessionId: data.sessionId || `fallback_${Date.now()}`, // Return the provided sessionId
-            ui: [],
-            meta: {
-              event: { type: "message_processed" }
-            }
-          };
-          return jsonResponse(fallbackResponse);
-        }
-
         // Отправить сообщение
         if (!data.sessionId || !data.content) {
           return errorResponse("Missing sessionId or content", "INVALID_REQUEST");
         }
 
-        console.log(`[chat-proxy] Calling n8n with config:`, {
-          webhookUrl: n8nConfig.webhookUrl,
-          hasSecret: !!n8nConfig.secretKey
-        });
+        // Helper function to generate AI fallback response
+        const generateFallbackResponse = async (reason: string) => {
+          console.log(`[chat-proxy] Using AI fallback for message. Reason: ${reason}`);
+          
+          try {
+            const systemPrompt = `You are the Credo-Service Advisor — a professional, unbiased financial advisor.
+          
+Your responsibilities:
+- Help users understand their credit and financial situation
+- Provide clear, practical advice about loans, debt management, refinancing, and bankruptcy
+- Be supportive and non-judgmental
+- Respond in the same language as the user's message (Russian or English)
+- Do NOT guarantee loan approvals or make promises about specific outcomes
+- Recommend consulting with licensed professionals for legal or tax matters
 
-        const result = await callN8n(n8nConfig, "message", {
-          sessionId: data.sessionId,
-          content: data.content,
-          language: data.language || "ru",
-          attachments: data.attachments,
-        }, userId);
+User's language: ${data.language || 'ru'}`;
 
-        console.log(`[chat-proxy] n8n response:`, result);
+            const messages = [
+              { role: 'system' as const, content: systemPrompt },
+              { role: 'user' as const, content: data.content }
+            ];
 
-        // FIX: Ensure sessionId is returned correctly (use provided sessionId if n8n returns "unknown")
-        const fixedResult = {
-          ...result,
-          sessionId: result.sessionId === "unknown" ? data.sessionId : result.sessionId
+            const { text } = await blink.ai.generateText({
+              messages,
+              maxTokens: 1000
+            });
+
+            return {
+              text: text,
+              state: "CHAT",
+              sessionId: data.sessionId,
+              ui: [],
+              meta: {
+                event: { type: "message_processed", fallback: true, reason }
+              }
+            };
+          } catch (aiError) {
+            console.error(`[chat-proxy] AI fallback also failed:`, aiError);
+            return {
+              text: "Прошу прощения, возникла временная ошибка. Пожалуйста, попробуйте еще раз через несколько секунд.",
+              state: "CHAT",
+              sessionId: data.sessionId,
+              ui: [],
+              meta: {
+                event: { type: "ai_error", fallback: true },
+                error: aiError instanceof Error ? aiError.message : "Unknown error"
+              }
+            };
+          }
         };
 
-        console.log(`[chat-proxy] Fixed response:`, fixedResult);
+        // Double-check environment variables for message endpoint
+        const messageN8nUrl = Deno.env.get("N8N_WEBHOOK_URL");
+        console.log(`[chat-proxy] Message endpoint env check: n8nUrl=${messageN8nUrl ? 'SET' : 'NOT_SET'}`);
 
-        // Логируем AI вызов
-        await logEvent(blink, userId, "ai_call", {
-          sessionId: data.sessionId,
-          state: fixedResult.state,
-        });
+        // If no n8n config for message endpoint, use fallback
+        if (!messageN8nUrl) {
+          const fallbackResponse = await generateFallbackResponse("n8n not configured");
+          return jsonResponse(fallbackResponse);
+        }
 
-        return jsonResponse(fixedResult);
+        // Try n8n, fallback to AI on error
+        try {
+          console.log(`[chat-proxy] Calling n8n with config:`, {
+            webhookUrl: n8nConfig.webhookUrl,
+            hasSecret: !!n8nConfig.secretKey
+          });
+
+          const result = await callN8n(n8nConfig, "message", {
+            sessionId: data.sessionId,
+            content: data.content,
+            language: data.language || "ru",
+            attachments: data.attachments,
+          }, userId);
+
+          console.log(`[chat-proxy] n8n response:`, result);
+
+          // FIX: Ensure sessionId is returned correctly (use provided sessionId if n8n returns "unknown")
+          const fixedResult = {
+            ...result,
+            sessionId: result.sessionId === "unknown" ? data.sessionId : result.sessionId
+          };
+
+          console.log(`[chat-proxy] Fixed response:`, fixedResult);
+
+          // Логируем AI вызов
+          await logEvent(blink, userId, "ai_call", {
+            sessionId: data.sessionId,
+            state: fixedResult.state,
+          });
+
+          return jsonResponse(fixedResult);
+        } catch (n8nError) {
+          // Fallback to local AI if n8n fails (404, 500, timeout, etc.)
+          console.error(`[chat-proxy] n8n call failed, using AI fallback:`, n8nError);
+          const errorMessage = n8nError instanceof Error ? n8nError.message : "Unknown n8n error";
+          const fallbackResponse = await generateFallbackResponse(errorMessage);
+          return jsonResponse(fallbackResponse);
+        }
       }
 
       case "action": {
@@ -346,38 +405,54 @@ User's language: ${data.language || 'ru'}`;
         if (!data.sessionId || !data.action) {
           return errorResponse("Missing sessionId or action", "INVALID_REQUEST");
         }
-        
-        const result = await callN8n(n8nConfig, "action", {
-          sessionId: data.sessionId,
-          action: data.action,
-          language: data.language || "ru",
-          payload: data.payload,
-        }, userId);
-        
-        // Логируем событие по типу действия
-        const eventMap: Record<string, string> = {
-          "consent_given": "consent_given",
-          "diagnostic_answer": "diagnostic_step",
-          "scenario_select": "scenario_started",
-          "scenario_step": "scenario_step",
-        };
-        
-        if (eventMap[data.action]) {
-          await logEvent(blink, userId, eventMap[data.action], {
+
+        try {
+          const result = await callN8n(n8nConfig, "action", {
             sessionId: data.sessionId,
             action: data.action,
+            language: data.language || "ru",
             payload: data.payload,
-          });
-        }
-        
-        // Специальные события
-        if (result.state === "SUMMARY") {
-          await logEvent(blink, userId, "diagnostic_completed", {
+          }, userId);
+          
+          // Логируем событие по типу действия
+          const eventMap: Record<string, string> = {
+            "consent_given": "consent_given",
+            "diagnostic_answer": "diagnostic_step",
+            "scenario_select": "scenario_started",
+            "scenario_step": "scenario_step",
+          };
+          
+          if (eventMap[data.action]) {
+            await logEvent(blink, userId, eventMap[data.action], {
+              sessionId: data.sessionId,
+              action: data.action,
+              payload: data.payload,
+            });
+          }
+          
+          // Специальные события
+          if (result.state === "SUMMARY") {
+            await logEvent(blink, userId, "diagnostic_completed", {
+              sessionId: data.sessionId,
+            });
+          }
+          
+          return jsonResponse(result);
+        } catch (n8nError) {
+          // Fallback response for action errors
+          console.error(`[chat-proxy] n8n action failed, using fallback:`, n8nError);
+          const fallbackResponse = {
+            text: "Действие обработано. Продолжим работу.",
+            state: "CHAT",
             sessionId: data.sessionId,
-          });
+            ui: [],
+            meta: {
+              event: { type: "action_processed", fallback: true },
+              action: data.action
+            }
+          };
+          return jsonResponse(fallbackResponse);
         }
-        
-        return jsonResponse(result);
       }
 
       case "session": {

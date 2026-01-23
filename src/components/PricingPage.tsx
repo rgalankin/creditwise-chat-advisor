@@ -114,7 +114,7 @@ export function PricingPage() {
                   <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">{plan.desc}</p>
                 </div>
                 <div className="mt-6 flex items-baseline gap-1">
-                  <span className="text-4xl font-black">${plan.price}</span>
+                  <span className="text-4xl font-black">{plan.price} ₽</span>
                   <span className="text-muted-foreground font-medium">/мес</span>
                 </div>
               </div>

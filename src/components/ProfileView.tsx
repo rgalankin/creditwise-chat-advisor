@@ -210,8 +210,8 @@ export function ProfileView({ profile, updateProfile, onStartChat, isGuestMode =
             <CardContent>
                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                  <Metric label="Рейтинг" value="N/A" />
-                 <Metric label="Общий долг" value="$0.00" />
-                 <Metric label="Доход" value="$0.00" />
+                 <Metric label="Общий долг" value="0.00 ₽" />
+                 <Metric label="Доход" value="0.00 ₽" />
                  <Metric label="Риск" value="Низкий" color="text-emerald-500" />
                </div>
                

@@ -41,10 +41,12 @@ export function ChatWindow({ profile, updateProfile, isGuestMode = false, onLogi
     if (!textToSend.trim()) return;
     
     // Requirements: certain actions require login in guest mode
+    // NOTE: Consent actions are allowed in demo mode to proceed to diagnostic questions
     if (isGuestMode) {
       const lowerText = textToSend.toLowerCase();
-      const loginRequiredActions = ['согласен', 'предоставить согласие', 'agree', 'provide consent'];
-      
+      // Removed consent-related actions from login requirement - allow demo flow to proceed
+      const loginRequiredActions = [];
+
       if (loginRequiredActions.some(action => lowerText.includes(action))) {
         toast.info('Для продолжения необходимо войти в систему');
         if (onLogin) onLogin();

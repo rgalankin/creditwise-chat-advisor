@@ -1,11 +1,12 @@
 import React from 'react';
 import { Button } from './ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
-import { User, Globe, Shield, Calendar, CreditCard, Sparkles, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react';
+import { User, Globe, Shield, Calendar, CreditCard, Sparkles, AlertCircle, ArrowRight, ShieldCheck, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '../lib/utils';
 import { useLanguage } from '../lib/i18n';
 import { useCredits } from '../hooks/useCredits';
+import { blink } from '../lib/blink';
 
 interface ProfileViewProps {
   profile: any;
@@ -264,6 +265,30 @@ export function ProfileView({ profile, updateProfile, onStartChat, isGuestMode =
               </div>
             </CardContent>
           </Card>
+
+          {/* Logout Section */}
+          {!isGuestMode && (
+            <Card className="border-destructive/20 bg-destructive/5">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <h3 className="font-bold text-destructive">Выйти из аккаунта</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Завершить сессию и вернуться к началу
+                    </p>
+                  </div>
+                  <Button
+                    onClick={() => blink.auth.logout()}
+                    variant="destructive"
+                    className="gap-2 font-bold hover:bg-destructive/90"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Выход
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

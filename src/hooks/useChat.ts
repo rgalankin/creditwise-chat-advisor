@@ -47,8 +47,7 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
   }, []);
 
   const getInitialMessage = useCallback(() => {
-    // Universal greeting for CHAT mode - no diagnostic flow
-    return "Здравствуйте! Я ваш финансовый советник. Задайте любой вопрос о кредитах, долгах, рефинансировании или банкротстве — я помогу разобраться в вашей ситуации.";
+    return "Здравствуйте! Я ваш персональный кредитный советник. Я помогу вам разобраться в вашей финансовой ситуации, проанализировать долги и найти пути решения.\n\nС какой проблемой или вопросом вы столкнулись сегодня?";
   }, []);
 
   const initSession = useCallback(async () => {
@@ -63,8 +62,7 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
       if (guestSession) {
         const data = JSON.parse(guestSession);
         setMessages(data.messages || []);
-        // Always use CHAT mode - bypass diagnostic FSM
-        setChatState('CHAT');
+        setChatState(data.chatState || 'INTRO');
         setDiagnosticData(data.diagnosticData || {});
         
         if (!data.messages || data.messages.length === 0) {
@@ -78,11 +76,10 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
           sessionStorage.setItem(GUEST_SESSION_KEY, JSON.stringify({
             ...data,
             messages: [greeting],
-            chatState: 'CHAT'
+            chatState: 'INTRO'
           }));
         }
       } else {
-        // Initialize new guest session with greeting - direct to CHAT mode
         const greeting = {
           id: `msg_guest_${Date.now()}`,
           role: 'assistant',
@@ -90,21 +87,18 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
           createdAt: new Date().toISOString()
         };
         setMessages([greeting]);
-        setChatState('CHAT');
+        setChatState('INTRO');
         sessionStorage.setItem(GUEST_SESSION_KEY, JSON.stringify({
           messages: [greeting],
-          chatState: 'CHAT',
+          chatState: 'INTRO',
           diagnosticData: {}
         }));
       }
       return;
     }
 
-    // Authenticated user - get sessions from database
-    if (!profile?.userId) {
-      console.warn('[useChat] Profile userId is missing, cannot init session for authenticated user');
-      return;
-    }
+    // Authenticated user
+    if (!profile?.userId) return;
 
     try {
       const sessions = await (blink.db as any).chatSessions.list({ 
@@ -118,7 +112,7 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
       if (!activeSession) {
         activeSession = await (blink.db as any).chatSessions.create({
           userId: profile?.userId,
-          title: 'Финансовый советник'
+          title: 'Консультация'
         });
         
         const greeting = {
@@ -126,11 +120,11 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
           userId: profile?.userId,
           role: 'assistant',
           content: getInitialMessage(),
-          metadata: JSON.stringify({ state: 'CHAT' })
+          metadata: JSON.stringify({ state: 'INTRO' })
         };
         const createdMsg = await (blink.db as any).chatMessages.create(greeting);
         setMessages([createdMsg]);
-        setChatState('CHAT');
+        setChatState('INTRO');
       } else {
         const msgs = await (blink.db as any).chatMessages.list({
           where: { sessionId: activeSession.id },
@@ -138,20 +132,20 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
         });
         setMessages(msgs);
         
-        // Always use CHAT mode - bypass diagnostic FSM
-        // Restore only diagnosticData if available
         const lastMsg = msgs[msgs.length - 1];
         if (lastMsg?.metadata) {
           const meta = JSON.parse(lastMsg.metadata);
+          setChatState(meta.state || 'CHAT');
           if (meta.diagnosticData) setDiagnosticData(meta.diagnosticData);
+        } else {
+          setChatState('CHAT');
         }
-        setChatState('CHAT');
       }
       setSession(activeSession);
     } catch (error) {
       console.error('Session init error:', error);
     }
-  }, [profile, language, getInitialMessage]);
+  }, [profile, getInitialMessage]);
 
   const getDiagnosticQuestion = (step: number) => {
     switch (step) {
@@ -408,13 +402,30 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
       return;
     }
 
-    // FSM Logic for guests - Default to CHAT mode to bypass diagnostic flow
+    // FSM Logic for guests
     let nextState: ChatState = chatState;
     let responseText = '';
     let updatedDiagData = diagnosticData;
 
-    // Only process diagnostic steps if we are explicitly in them (legacy support)
-    if (chatState.startsWith('DIAGNOSTIC_')) {
+    if (chatState === 'INTRO') {
+      nextState = 'JURISDICTION';
+      responseText = "Понял вас. Чтобы мои рекомендации были точными и соответствовали законодательству, пожалуйста, уточните вашу юрисдикцию (страна и регион).";
+      updatedDiagData = { ...diagnosticData, initial_request: content };
+    } else if (chatState === 'JURISDICTION') {
+      nextState = 'CONSENT';
+      responseText = `Принято. Мы работаем в юрисдикции: **${content}**. \n\nПрежде чем мы продолжим анализ вашей ситуации и документов, мне необходимо ваше согласие на обработку персональных данных. \n\nВы согласны продолжить?`;
+      updatedDiagData = { ...diagnosticData, jurisdiction: content };
+    } else if (chatState === 'CONSENT') {
+      if (content.toLowerCase().includes('да') || content.toLowerCase().includes('согласен') || content.toLowerCase().includes('accept')) {
+        const qObj = getDiagnosticQuestion(1);
+        nextState = 'DIAGNOSTIC_1';
+        responseText = "Отлично. Давайте проведем экспресс-диагностику. \n\n" + qObj.q;
+        updatedDiagData = { ...diagnosticData, consent: true };
+      } else {
+        nextState = 'CONSENT';
+        responseText = "Для проведения детального анализа и работы с вашими документами мне необходимо ваше согласие. Без него я смогу давать только общие теоретические справки. \n\nВы подтверждаете согласие?";
+      }
+    } else if (chatState.startsWith('DIAGNOSTIC_')) {
       const currentStep = parseInt(chatState.split('_')[1]);
       const nextStep = currentStep + 1;
       updatedDiagData = { ...diagnosticData, [`step_${currentStep}`]: content };
@@ -590,9 +601,27 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
       return;
     }
 
-    // FSM Logic - Default to CHAT mode to bypass diagnostic flow
-    // Only process diagnostic steps if we are explicitly in them (legacy support)
-    if (chatState.startsWith('DIAGNOSTIC_')) {
+    // FSM Logic - Implementation of the structured onboarding flow
+    if (chatState === 'INTRO') {
+      const nextState: ChatState = 'JURISDICTION';
+      const responseText = "Понял вас. Чтобы мои рекомендации были точными и соответствовали законодательству, пожалуйста, уточните вашу юрисдикцию (страна и регион).";
+      const updatedData = { ...diagnosticData, initial_request: content };
+      await moveToState(nextState, responseText, updatedData);
+    } else if (chatState === 'JURISDICTION') {
+      const nextState: ChatState = 'CONSENT';
+      const responseText = `Принято. Мы работаем в юрисдикции: **${content}**. \n\nПрежде чем мы продолжим анализ вашей ситуации и документов, мне необходимо ваше согласие на обработку персональных данных. \n\nВы согласны продолжить?`;
+      const updatedData = { ...diagnosticData, jurisdiction: content };
+      await updateProfile({ jurisdiction: content });
+      await moveToState(nextState, responseText, updatedData);
+    } else if (chatState === 'CONSENT') {
+      if (content.toLowerCase().includes('да') || content.toLowerCase().includes('согласен') || content.toLowerCase().includes('accept')) {
+        const qObj = getDiagnosticQuestion(1);
+        const updatedData = { ...diagnosticData, consent: true };
+        await moveToState('DIAGNOSTIC_1', "Отлично. Давайте проведем экспресс-диагностику. \n\n" + qObj.q, updatedData);
+      } else {
+        await moveToState('CONSENT', "Для проведения детального анализа и работы с вашими документами мне необходимо ваше согласие. Без него я смогу давать только общие теоретические справки. \n\nВы подтверждаете согласие?", diagnosticData);
+      }
+    } else if (chatState.startsWith('DIAGNOSTIC_')) {
       const currentStep = parseInt(chatState.split('_')[1]);
       const nextStep = currentStep + 1;
       const updatedData = { ...diagnosticData, [`step_${currentStep}`]: content };
@@ -739,29 +768,84 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
   };
 
   const uploadDocument = async (file: File) => {
-    // ... same as before but update state/metadata if needed
     if (!session || !profile) return;
+    
+    const isGuest = !profile || profile.displayName === 'Guest';
     toast.info(`Анализ ${file.name}...`);
+    setIsLoading(true);
+
     try {
       const { publicUrl } = await blink.storage.upload(file, `docs/${profile?.userId || 'guest'}/${Date.now()}_${file.name}`);
-      const analysisPrompt = `Extract key financial data from this document. Document: ${file.name}`;
-      const { text } = await blink.ai.generateText({
-        messages: [
-          { role: 'system', content: 'You are a financial document parser.' },
-          { role: 'user', content: [{ type: 'text', text: analysisPrompt }, { type: 'image', image: publicUrl }]}
-        ]
+      
+      const { object: extractedData } = await blink.ai.generateObject({
+        prompt: `Extract key financial indicators from this document. 
+        Analyze the document type (income statement, credit report, contract, etc.).
+        Extract values like monthly income, total debt, monthly payments, interest rates, or credit score if present.`,
+        schema: {
+          type: 'object',
+          properties: {
+            docType: { type: 'string', enum: ['income_statement', 'credit_report', 'contract', 'id', 'other'] },
+            indicators: {
+              type: 'object',
+              properties: {
+                monthlyIncome: { type: 'number' },
+                totalDebt: { type: 'number' },
+                monthlyPayment: { type: 'number' },
+                creditScore: { type: 'number' },
+                interestRate: { type: 'number' }
+              }
+            },
+            summary: { type: 'string' }
+          },
+          required: ['docType', 'summary']
+        }
       });
-      await (blink.db as any).userDocuments.create({ userId: profile?.userId, name: file.name, url: publicUrl, extractedData: text });
-      const botMsg = await (blink.db as any).chatMessages.create({
-        sessionId: session.id,
-        userId: profile.userId,
+
+      // Save document record
+      if (!isGuest) {
+        await (blink.db as any).userDocuments.create({ 
+          userId: profile.userId, 
+          name: file.name, 
+          url: publicUrl, 
+          extractedData: JSON.stringify(extractedData) 
+        });
+
+        // Update profile indicators if data found
+        const currentData = diagnosticData || {};
+        const newData = { ...currentData, ...extractedData.indicators, lastDocType: extractedData.docType };
+        await updateProfile({ financialData: JSON.stringify(newData) });
+        setDiagnosticData(newData);
+      }
+
+      const botMsg = {
+        id: `msg_doc_${Date.now()}`,
         role: 'assistant',
-        content: `Документ **${file.name}** проанализирован.`,
-        metadata: JSON.stringify({ state: chatState, diagnosticData })
-      });
-      setMessages(prev => [...prev, botMsg]);
+        content: `Документ **${file.name}** успешно распознан как *${extractedData.docType}*.\n\n**Результат анализа:**\n${extractedData.summary}`,
+        metadata: JSON.stringify({ state: chatState, diagnosticData, docAnalysis: extractedData })
+      };
+
+      if (isGuest) {
+        setMessages(prev => {
+          const updated = [...prev, botMsg];
+          const guestData = JSON.parse(sessionStorage.getItem(GUEST_SESSION_KEY) || '{}');
+          sessionStorage.setItem(GUEST_SESSION_KEY, JSON.stringify({ ...guestData, messages: updated }));
+          return updated;
+        });
+      } else {
+        const savedMsg = await (blink.db as any).chatMessages.create({
+          sessionId: session.id,
+          userId: profile.userId,
+          role: 'assistant',
+          content: botMsg.content,
+          metadata: botMsg.metadata
+        });
+        setMessages(prev => [...prev, savedMsg]);
+      }
     } catch (error) {
-      toast.error('Failed to process document.');
+      console.error('Upload/Analysis error:', error);
+      toast.error('Ошибка при обработке документа');
+    } finally {
+      setIsLoading(false);
     }
   };
 

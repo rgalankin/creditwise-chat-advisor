@@ -209,13 +209,26 @@ export function ProfileView({ profile, updateProfile, onStartChat, isGuestMode =
             </CardHeader>
             <CardContent>
                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                 <Metric label="Рейтинг" value="N/A" />
-                 <Metric label="Общий долг" value="0.00 ₽" />
-                 <Metric label="Доход" value="0.00 ₽" />
-                 <Metric label="Риск" value="Низкий" color="text-emerald-500" />
+                 <Metric 
+                    label="Рейтинг" 
+                    value={diagData?.creditScore ? `${diagData.creditScore}` : "N/A"} 
+                 />
+                 <Metric 
+                    label="Общий долг" 
+                    value={diagData?.totalDebt ? `${diagData.totalDebt.toLocaleString()} ₽` : "0.00 ₽"} 
+                 />
+                 <Metric 
+                    label="Доход" 
+                    value={diagData?.monthlyIncome ? `${diagData.monthlyIncome.toLocaleString()} ₽` : "0.00 ₽"} 
+                 />
+                 <Metric 
+                    label="Риск" 
+                    value={diagData?.totalDebt && diagData?.monthlyIncome && (diagData.totalDebt / diagData.monthlyIncome > 5) ? "Высокий" : "Низкий"} 
+                    color={diagData?.totalDebt && diagData?.monthlyIncome && (diagData.totalDebt / diagData.monthlyIncome > 5) ? "text-red-500" : "text-emerald-500"} 
+                 />
                </div>
                
-               {!isDiagComplete && (
+               {(!isDiagComplete && !diagData?.monthlyIncome) && (
                  <div className="p-6 border rounded-2xl bg-secondary/30 border-dashed flex flex-col items-center text-center space-y-3">
                    <AlertCircle className="h-8 w-8 text-muted-foreground/50" />
                    <div>

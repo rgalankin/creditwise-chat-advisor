@@ -14,6 +14,9 @@ export function AdminPanel() {
   });
   const [recentUsers, setRecentUsers] = useState<any[]>([]);
 
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [userMessages, setUserMessages] = useState<any[]>([]);
+
   useEffect(() => {
     const fetchStats = async () => {
       const usersCount = await (blink.db as any).userProfiles.count();
@@ -29,12 +32,88 @@ export function AdminPanel() {
 
       const users = await (blink.db as any).userProfiles.list({
         orderBy: { createdAt: 'desc' },
-        limit: 5
+        limit: 10
       });
       setRecentUsers(users);
     };
     fetchStats();
   }, []);
+
+  const handleUserClick = async (user: any) => {
+    setSelectedUser(user);
+    // Fetch user messages
+    try {
+      const messages = await (blink.db as any).chatMessages.list({
+        where: { userId: user.userId },
+        orderBy: { createdAt: 'asc' }
+      });
+      setUserMessages(messages);
+    } catch (error) {
+      console.error('Error fetching user messages:', error);
+      setUserMessages([]);
+    }
+  };
+
+  if (selectedUser) {
+    return (
+      <div className="p-8 max-w-6xl mx-auto w-full space-y-8 animate-fade-in overflow-y-auto chat-height scrollbar-hide">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" onClick={() => setSelectedUser(null)}>
+            <ArrowUpRight className="h-4 w-4 mr-2 rotate-225" />
+            Назад
+          </Button>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Детали пользователя: {selectedUser.displayName}
+          </h1>
+        </div>
+
+        <div className="grid lg:grid-cols-3 gap-8">
+          <Card className="lg:col-span-1">
+            <CardHeader>
+              <CardTitle>Профиль</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground uppercase">Юрисдикция</p>
+                <p className="font-medium">{selectedUser.jurisdiction || 'Не указано'}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground uppercase">Согласие</p>
+                <p className="font-medium">{Number(selectedUser.hasConsent) > 0 ? 'Предоставлено' : 'Нет'}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground uppercase">Финансовые данные</p>
+                <pre className="text-[10px] bg-secondary p-2 rounded overflow-x-auto">
+                  {JSON.stringify(JSON.parse(selectedUser.financialData || '{}'), null, 2)}
+                </pre>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>История диалога</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 max-h-[500px] overflow-y-auto scrollbar-hide">
+              {userMessages.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">История пуста</p>
+              ) : (
+                userMessages.map((m, idx) => (
+                  <div key={idx} className={cn(
+                    "p-3 rounded-lg text-sm max-w-[80%]",
+                    m.role === 'user' ? "bg-primary text-primary-foreground ml-auto" : "bg-secondary border mr-auto"
+                  )}>
+                    <p className="font-bold text-[10px] opacity-70 mb-1">{m.role === 'user' ? 'USER' : 'AI'}</p>
+                    <p>{m.content}</p>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8 max-w-6xl mx-auto w-full space-y-8 animate-fade-in overflow-y-auto chat-height scrollbar-hide">
@@ -68,7 +147,11 @@ export function AdminPanel() {
           <CardContent>
             <div className="space-y-4">
               {recentUsers.map((user) => (
-                <div key={user.id} className="flex items-center justify-between p-4 bg-secondary/30 rounded-xl border">
+                <div 
+                  key={user.id} 
+                  className="flex items-center justify-between p-4 bg-secondary/30 rounded-xl border hover:border-primary/50 cursor-pointer transition-colors"
+                  onClick={() => handleUserClick(user)}
+                >
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 bg-primary rounded-full flex items-center justify-center font-bold text-primary-foreground">
                       {user.displayName?.[0] || 'U'}
@@ -100,14 +183,22 @@ export function AdminPanel() {
             <HealthItem label="OCR Success Rate" value="98.5%" status="Excellent" />
             <HealthItem label="DB Load" value="14%" status="Low" />
             <div className="pt-4 border-t border-border/50">
-               <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-widest">
-                 Охват юрисдикций
+               <p className="text-xs text-muted-foreground mb-4 font-medium uppercase tracking-widest">
+                 Настройка юрисдикций
                </p>
-               <div className="flex flex-wrap gap-2">
-                 <span className="px-2 py-1 bg-secondary rounded text-[10px] font-bold">Russia</span>
-                 <span className="px-2 py-1 bg-secondary rounded text-[10px] font-bold">USA</span>
-                 <span className="px-2 py-1 bg-secondary rounded text-[10px] font-bold">EU</span>
-                 <span className="px-2 py-1 bg-secondary rounded text-[10px] font-bold">UK</span>
+               <div className="space-y-3">
+                 {["Russia", "USA", "EU", "UK"].map((juris) => (
+                   <div key={juris} className="flex items-center justify-between p-2 bg-secondary/50 rounded-lg border text-[10px] font-bold">
+                     <span>{juris}</span>
+                     <div className="flex gap-2">
+                       <Button variant="ghost" size="icon" className="h-6 w-6 text-emerald-600"><Activity className="h-3 w-3" /></Button>
+                       <Button variant="ghost" size="icon" className="h-6 w-6 text-primary"><Settings className="h-3 w-3" /></Button>
+                     </div>
+                   </div>
+                 ))}
+                 <Button variant="outline" size="sm" className="w-full text-[10px] font-bold uppercase h-8 border-dashed">
+                   Добавить регион
+                 </Button>
                </div>
             </div>
           </CardContent>

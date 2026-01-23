@@ -150,11 +150,9 @@ export function ChatWindow({ profile, updateProfile, isGuestMode = false, onLogi
       >
         {messages.map((m, idx) => {
           const isLastMessage = idx === messages.length - 1;
-          // All diagnostic/consent UI disabled - always in free chat mode
-          // Removed unused option booleans and related logic to clean up the UI
-          const showDiagnosticOptions = false;
-          const showConsentOptions = false;
-          const showIntroOptions = false;
+          const showDiagnosticOptions = isLastMessage && chatState.startsWith('DIAGNOSTIC_');
+          const showConsentOptions = isLastMessage && chatState === 'CONSENT';
+          const showJurisdictionOptions = isLastMessage && chatState === 'JURISDICTION';
 
           return (
             <div 
@@ -193,7 +191,60 @@ export function ChatWindow({ profile, updateProfile, isGuestMode = false, onLogi
                   </ReactMarkdown>
                 </div>
                 
-                {/* Options Chips disabled for free chat mode */}
+                {showDiagnosticOptions && (
+                  <div className="flex flex-wrap gap-2 animate-slide-up">
+                    {getDiagnosticQuestion(parseInt(chatState.split('_')[1])).options.map((opt: string) => (
+                      <Button
+                        key={opt}
+                        variant="outline"
+                        size="sm"
+                        className="rounded-xl border-primary/20 hover:border-primary hover:bg-primary/5 text-xs font-medium h-auto py-2 px-3"
+                        onClick={() => handleSend(opt)}
+                      >
+                        {opt}
+                      </Button>
+                    ))}
+                  </div>
+                )}
+
+                {showConsentOptions && (
+                  <div className="flex flex-wrap gap-2 animate-slide-up">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-xl border-emerald-500/20 hover:border-emerald-500 hover:bg-emerald-500/5 text-xs font-bold h-auto py-2 px-4 text-emerald-600 uppercase tracking-widest"
+                      onClick={() => handleSend("Да, я согласен")}
+                    >
+                      <ShieldCheck className="h-3 w-3 mr-2" />
+                      Согласен
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-xl border-destructive/20 hover:border-destructive hover:bg-destructive/5 text-xs font-bold h-auto py-2 px-4 text-destructive uppercase tracking-widest"
+                      onClick={() => handleSend("Нет, мне нужна общая консультация")}
+                    >
+                      Отказаться
+                    </Button>
+                  </div>
+                )}
+
+                {showJurisdictionOptions && (
+                  <div className="flex flex-wrap gap-2 animate-slide-up">
+                    {["Россия", "США", "Казахстан", "Грузия", "Евросоюз", "Другое"].map((juris) => (
+                      <Button
+                        key={juris}
+                        variant="outline"
+                        size="sm"
+                        className="rounded-xl border-primary/20 hover:border-primary hover:bg-primary/5 text-xs font-medium h-auto py-2 px-3"
+                        onClick={() => handleSend(juris)}
+                      >
+                        <Globe className="h-3 w-3 mr-2" />
+                        {juris}
+                      </Button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           );

@@ -59,13 +59,6 @@ export function ChatWindow({ profile, updateProfile, isGuestMode = false, onLogi
   };
 
   const getProgressValue = () => {
-    if (chatState === 'INTRO') return 0;
-    if (chatState === 'CONSENT') return 10;
-    if (chatState.startsWith('DIAGNOSTIC_')) {
-      const step = parseInt(chatState.split('_')[1]);
-      return 10 + (step * 10);
-    }
-    if (chatState === 'SUMMARY') return 95;
     return 100;
   };
 
@@ -150,8 +143,8 @@ export function ChatWindow({ profile, updateProfile, isGuestMode = false, onLogi
         </div>
       </header>
 
-      {/* Progress Bar */}
-      <div className="px-6 py-3 bg-secondary/30 border-b">
+      {/* Progress Bar hidden for free chat mode */}
+      <div className="hidden px-6 py-3 bg-secondary/30 border-b">
         <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">
           <span>Прогресс анализа</span>
           <span>{getProgressValue()}%</span>
@@ -165,9 +158,9 @@ export function ChatWindow({ profile, updateProfile, isGuestMode = false, onLogi
       >
         {messages.map((m, idx) => {
           const isLastMessage = idx === messages.length - 1;
-          const showDiagnosticOptions = isLastMessage && m.role === 'assistant' && currentStepInfo;
+          const showDiagnosticOptions = isLastMessage && m.role === 'assistant' && currentStepInfo && chatState.startsWith('DIAGNOSTIC_');
           const showConsentOptions = isLastMessage && m.role === 'assistant' && chatState === 'CONSENT';
-          const showIntroOptions = isLastMessage && m.role === 'assistant' && chatState === 'INTRO';
+          const showIntroOptions = false; // Always hide intro options in free chat mode
 
           return (
             <div 

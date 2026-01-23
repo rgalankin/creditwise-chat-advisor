@@ -26,7 +26,7 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
   const [messages, setMessages] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [session, setSession] = useState<any>(null);
-  const [chatState, setChatState] = useState<ChatState>('INTRO');
+  const [chatState, setChatState] = useState<ChatState>('CHAT');
   const [diagnosticData, setDiagnosticData] = useState<any>({});
   const [apiMode, setApiMode] = useState<'local' | 'n8n' | 'checking'>('checking');
   const modeCheckedRef = useRef(false);
@@ -395,36 +395,13 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
       return;
     }
 
-    // FSM Logic for guests
+    // FSM Logic for guests - Default to CHAT if no diagnostic is ongoing
     let nextState: ChatState = chatState;
     let responseText = '';
     let updatedDiagData = diagnosticData;
 
-    if (chatState === 'INTRO') {
-      // Переход на согласие при любом действии "Начать"
-      if (content.toLowerCase().includes('начать') || content.toLowerCase().includes('диагностик') || content.toLowerCase().includes('start')) {
-        nextState = 'CONSENT';
-        responseText = getInitialMessage('CONSENT');
-      } else {
-        // Для любых других сообщений в INTRO - объясняем что нужно начать
-        responseText = "Чтобы начать диагностику вашей финансовой ситуации, нажмите кнопку **\"Начать диагностику\"** ниже.";
-        nextState = 'INTRO';
-      }
-    } else if (chatState === 'CONSENT') {
-      // Проверяем согласие - включая текст кнопки "Предоставить согласие"
-      const consentPhrases = ['согласен', 'согласие', 'да', 'agree', 'yes', 'предоставить', 'принимаю', 'accept'];
-      const hasConsent = consentPhrases.some(phrase => content.toLowerCase().includes(phrase));
-      
-      if (hasConsent) {
-        const qObj = getDiagnosticQuestion(1);
-        nextState = 'DIAGNOSTIC_1';
-        responseText = `Отлично! Согласие принято. Начинаем диагностику.\n\n${qObj.q}`;
-      } else {
-        // Остаемся на CONSENT, не переходим на INTRO
-        nextState = 'CONSENT';
-        responseText = "Для продолжения диагностики необходимо ваше согласие на обработку данных. Нажмите **\"Предоставить согласие\"**, чтобы продолжить.";
-      }
-    } else if (chatState.startsWith('DIAGNOSTIC_')) {
+    // Only process diagnostic steps if we are explicitly in them
+    if (chatState.startsWith('DIAGNOSTIC_')) {
       const currentStep = parseInt(chatState.split('_')[1]);
       const nextStep = currentStep + 1;
       updatedDiagData = { ...diagnosticData, [`step_${currentStep}`]: content };
@@ -436,6 +413,68 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
       } else {
         nextState = 'SUMMARY';
         responseText = `Диагностика завершена! Вот краткий анализ вашей ситуации:\n\n**Ваши ответы:**\n${Object.entries(updatedDiagData).map(([k, v]) => `• ${k}: ${v}`).join('\n')}\n\n**Рекомендации:**\n1. Рассмотрите варианты рефинансирования\n2. Проверьте свою кредитную историю\n3. Составьте план погашения долгов\n\nДля более детального анализа зарегистрируйтесь в системе.`;
+      }
+    } else if (chatState === 'INTRO' || chatState === 'CONSENT' || chatState === 'CHAT') {
+      // Direct AI streaming fallback if n8n is unavailable or in non-diagnostic states
+      setIsLoading(true);
+      try {
+        const systemPrompt = `You are the Credo-Service Advisor.
+        Respond as a professional, unbiased financial advisor. 
+        If the user has provided diagnostic data: ${JSON.stringify(diagnosticData)}, use it.`;
+
+        let fullResponse = '';
+        const botMsgId = `msg_guest_a_${Date.now()}`;
+        
+        // Add empty streaming message
+        const initialBotMsg = { 
+          id: botMsgId, 
+          role: 'assistant', 
+          content: '', 
+          isStreaming: true,
+          metadata: JSON.stringify({ state: 'CHAT', diagnosticData }),
+          createdAt: new Date().toISOString()
+        };
+        
+        setMessages(prev => [...prev, initialBotMsg]);
+
+        await blink.ai.streamText({
+          messages: [
+            { role: 'system', content: systemPrompt },
+            ...messages.map(m => ({ role: m.role, content: m.content })),
+            { role: 'user', content }
+          ]
+        }, (chunk) => {
+          fullResponse += chunk;
+          setMessages(prev => prev.map(m => m.id === botMsgId ? { ...m, content: fullResponse } : m));
+        });
+
+        // Final update and storage
+        const finalMessages = messages.concat({
+          id: botMsgId,
+          role: 'assistant',
+          content: fullResponse,
+          metadata: JSON.stringify({ state: 'CHAT', diagnosticData }),
+          createdAt: new Date().toISOString()
+        });
+        
+        setMessages(finalMessages);
+        setChatState('CHAT');
+
+        const guestData = JSON.parse(sessionStorage.getItem(GUEST_SESSION_KEY) || '{}');
+        sessionStorage.setItem(GUEST_SESSION_KEY, JSON.stringify({
+          ...guestData,
+          messages: finalMessages,
+          chatState: 'CHAT',
+          diagnosticData
+        }));
+        
+        return; // Success, already updated state
+      } catch (error) {
+        console.error('Guest fallback chat error:', error);
+        responseText = "Прошу прощения, возникла ошибка при связи с ИИ. Пожалуйста, попробуйте позже.";
+        nextState = 'CHAT';
+      } finally {
+        setIsLoading(false);
       }
     } else if (chatState === 'SUMMARY') {
       // После summary - переход в свободный чат
@@ -532,29 +571,8 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
       return;
     }
 
-    // FSM Logic
-    if (chatState === 'INTRO') {
-      // Переход на согласие при любом действии "Начать"
-      if (content.toLowerCase().includes('начать') || content.toLowerCase().includes('диагностик') || content.toLowerCase().includes('start')) {
-        await moveToState('CONSENT', getInitialMessage('CONSENT'));
-      } else {
-        // Для любых других сообщений в INTRO - объясняем что нужно начать
-        await moveToState('INTRO', "Чтобы начать диагностику вашей финансовой ситуации, нажмите кнопку **\"Начать диагностику\"** ниже.");
-      }
-    } else if (chatState === 'CONSENT') {
-      // Проверяем согласие - включая текст кнопки "Предоставить согласие"
-      const consentPhrases = ['согласен', 'согласие', 'да', 'agree', 'yes', 'предоставить', 'принимаю', 'accept'];
-      const hasConsent = consentPhrases.some(phrase => content.toLowerCase().includes(phrase));
-      
-      if (hasConsent) {
-        await updateProfile({ hasConsent: 1, jurisdiction: 'Russia' });
-        const qObj = getDiagnosticQuestion(1);
-        await moveToState('DIAGNOSTIC_1', `Отлично! Согласие принято. Начинаем диагностику.\n\n${qObj.q}`);
-      } else {
-        // Остаемся на CONSENT, не переходим на INTRO
-        await moveToState('CONSENT', "Для продолжения диагностики необходимо ваше согласие на обработку данных. Нажмите **\"Предоставить согласие\"**, чтобы продолжить.");
-      }
-    } else if (chatState.startsWith('DIAGNOSTIC_')) {
+    // FSM Logic - Only process diagnostic if explicitly in those states
+    if (chatState.startsWith('DIAGNOSTIC_')) {
       const currentStep = parseInt(chatState.split('_')[1]);
       const nextStep = currentStep + 1;
       const updatedData = { ...diagnosticData, [`step_${currentStep}`]: content };
@@ -588,6 +606,51 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
         } finally {
           setIsLoading(false);
         }
+      }
+    } else if (chatState === 'INTRO' || chatState === 'CONSENT' || chatState === 'CHAT') {
+      // Free chat or AI response for free conversational mode
+      if (!isGuestMode) {
+        const hasCredit = await useCredit();
+        if (!hasCredit) return;
+      }
+
+      setIsLoading(true);
+      try {
+        const systemPrompt = `You are the Credo-Service Advisor.
+        User Context: ${profile?.jurisdiction || 'Unknown'}, Financial Data: ${JSON.stringify(diagnosticData)}.
+        Respond as a professional, unbiased advisor.`;
+
+        let fullResponse = '';
+        const botMsgId = `msg_a_${Date.now()}`;
+        
+        setMessages(prev => [...prev, { id: botMsgId, role: 'assistant', content: '', isStreaming: true }]);
+
+        await blink.ai.streamText({
+          messages: [
+            { role: 'system', content: systemPrompt },
+            ...messages.map(m => ({ role: m.role, content: m.content })),
+            { role: 'user', content }
+          ]
+        }, (chunk) => {
+          fullResponse += chunk;
+          setMessages(prev => prev.map(m => m.id === botMsgId ? { ...m, content: fullResponse } : m));
+        });
+
+        const finalBotMsg = await (blink.db as any).chatMessages.create({
+          sessionId: session.id,
+          userId: profile?.userId,
+          role: 'assistant',
+          content: fullResponse,
+          metadata: JSON.stringify({ state: 'CHAT', diagnosticData })
+        });
+
+        setMessages(prev => prev.map(m => m.id === botMsgId ? finalBotMsg : m));
+        setChatState('CHAT');
+      } catch (error) {
+        console.error('Chat error:', error);
+        toast.error('Connection issue.');
+      } finally {
+        setIsLoading(false);
       }
     } else {
       // Free chat or AI response

@@ -17,9 +17,10 @@ type ScenarioView = 'selection' | 'wizard' | 'summary';
 interface ChatDashboardProps {
   isGuestMode?: boolean;
   onLogin?: () => void;
+  onReturnToHome?: () => void;
 }
 
-export function ChatDashboard({ isGuestMode = false, onLogin }: ChatDashboardProps) {
+export function ChatDashboard({ isGuestMode = false, onLogin, onReturnToHome }: ChatDashboardProps) {
   const [activeTab, setActiveTab] = useState<ActiveTab>('chat');
   const { profile, loading, updateProfile } = useProfile();
   const [isAdmin, setIsAdmin] = useState(false);
@@ -137,6 +138,7 @@ export function ChatDashboard({ isGuestMode = false, onLogin }: ChatDashboardPro
         isAdmin={isAdmin}
         isGuestMode={isGuestMode}
         onLogin={onLogin}
+        onReturnToHome={onReturnToHome}
       />
       
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">

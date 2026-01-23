@@ -41,6 +41,11 @@ export default function App() {
     blink.auth.login(window.location.href);
   };
 
+  const handleReturnToHome = () => {
+    sessionStorage.removeItem(GUEST_SESSION_KEY);
+    setIsGuestMode(false);
+  };
+
   if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -51,7 +56,13 @@ export default function App() {
 
   // Show dashboard if authenticated OR in guest mode
   if (isAuthenticated || isGuestMode) {
-    return <ChatDashboard isGuestMode={isGuestMode && !isAuthenticated} onLogin={handleLogin} />;
+    return (
+      <ChatDashboard 
+        isGuestMode={isGuestMode && !isAuthenticated} 
+        onLogin={handleLogin} 
+        onReturnToHome={handleReturnToHome}
+      />
+    );
   }
 
   return (

@@ -12,9 +12,10 @@ interface SidebarProps {
   isAdmin?: boolean;
   isGuestMode?: boolean;
   onLogin?: () => void;
+  onReturnToHome?: () => void;
 }
 
-export function Sidebar({ activeTab, setActiveTab, isAdmin, isGuestMode = false, onLogin }: SidebarProps) {
+export function Sidebar({ activeTab, setActiveTab, isAdmin, isGuestMode = false, onLogin, onReturnToHome }: SidebarProps) {
   const { language, t } = useLanguage();
   const { credits } = useCredits();
   const displayCredits = isGuestMode ? null : credits;
@@ -30,7 +31,10 @@ export function Sidebar({ activeTab, setActiveTab, isAdmin, isGuestMode = false,
   return (
     <aside className="w-64 border-r flex flex-col h-screen shrink-0 bg-card shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-20">
       <div className="p-6">
-        <div className="flex items-center gap-3 mb-10 group cursor-pointer" onClick={() => setActiveTab('chat')}>
+        <div 
+          className="flex items-center gap-3 mb-10 group cursor-pointer" 
+          onClick={() => onReturnToHome ? onReturnToHome() : setActiveTab('chat')}
+        >
           <div className="h-10 w-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform">
             <img 
               src="https://firebasestorage.googleapis.com/v0/b/blink-451505.firebasestorage.app/o/user-uploads%2FendNQpF5nghlJxKVPTu4iQirL503%2Flogo-__e444df85.png?alt=media&token=3dc97fca-5f68-4d47-a4a6-debc1a8860bd" 

@@ -123,7 +123,7 @@ export function ProfileView({ profile, updateProfile, onStartChat, isGuestMode =
                 </div>
                 <div className="flex justify-between items-center py-2 border-b">
                   <span className="text-sm text-muted-foreground">{t('credits')}</span>
-                  <span className="text-sm font-bold text-primary">{credits ?? '...'}</span>
+                  <span className="text-sm font-bold text-primary">{isGuestMode ? 'N/A' : credits ?? '...'}</span>
                 </div>
                 <div className="flex justify-between items-center py-2">
                   <span className="text-sm text-muted-foreground">Дата регистрации</span>

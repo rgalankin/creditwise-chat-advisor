@@ -547,8 +547,10 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
       }
     } else {
       // Free chat or AI response
-      const hasCredit = await useCredit();
-      if (!hasCredit) return;
+      if (!isGuestMode) {
+        const hasCredit = await useCredit();
+        if (!hasCredit) return;
+      }
 
       setIsLoading(true);
       try {

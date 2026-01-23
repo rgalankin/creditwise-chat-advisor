@@ -17,6 +17,7 @@ interface SidebarProps {
 export function Sidebar({ activeTab, setActiveTab, isAdmin, isGuestMode = false, onLogin }: SidebarProps) {
   const { language, t } = useLanguage();
   const { credits } = useCredits();
+  const displayCredits = isGuestMode ? null : credits;
 
   const navItems = [
     { id: 'chat', label: 'Начать чат', icon: MessageSquare },
@@ -79,6 +80,7 @@ export function Sidebar({ activeTab, setActiveTab, isAdmin, isGuestMode = false,
 
       <div className="mt-auto p-6 space-y-4">
         {/* Credits Widget */}
+        {!isGuestMode && (
         <div className="bg-primary/5 rounded-2xl p-4 border border-primary/10 relative overflow-hidden group">
           <div className="absolute -right-2 -bottom-2 h-12 w-12 bg-primary/5 rounded-full blur-xl group-hover:scale-150 transition-transform" />
           <div className="flex items-center justify-between mb-2 relative z-10">
@@ -109,6 +111,7 @@ export function Sidebar({ activeTab, setActiveTab, isAdmin, isGuestMode = false,
             </Tooltip>
           </TooltipProvider>
         </div>
+        )}
 
         <div className="flex gap-2">
           {isGuestMode ? (

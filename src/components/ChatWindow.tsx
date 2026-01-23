@@ -62,7 +62,8 @@ export function ChatWindow({ profile, updateProfile, isGuestMode = false, onLogi
     return 100;
   };
 
-  const currentStepInfo = chatState.startsWith('DIAGNOSTIC_') ? getDiagnosticQuestion(parseInt(chatState.split('_')[1])) : null;
+  // Diagnostic UI disabled - always in free chat mode
+  const currentStepInfo = null;
 
   const startRecording = async () => {
     try {
@@ -123,20 +124,10 @@ export function ChatWindow({ profile, updateProfile, isGuestMode = false, onLogi
       <header className="h-16 border-b flex items-center justify-between px-6 shrink-0 bg-background z-10">
         <div className="flex items-center gap-3">
           <div className="flex flex-col">
-            <h2 className="font-bold text-sm">Кредитный советник</h2>
-            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground uppercase tracking-wider font-bold">
-              <span className={cn(chatState === 'INTRO' || chatState === 'CONSENT' ? "text-primary" : "")}>
-                Регион
-              </span>
-              <span>/</span>
-              <span className={cn(chatState.startsWith('DIAGNOSTIC_') ? "text-primary" : "")}>
-                Диагностика
-              </span>
-              <span>/</span>
-              <span className={cn(chatState === 'SUMMARY' ? "text-primary" : "")}>
-                Итог
-              </span>
-            </div>
+            <h2 className="font-bold text-sm">Финансовый советник</h2>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">
+              Задайте любой вопрос о кредитах и финансах
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -158,9 +149,10 @@ export function ChatWindow({ profile, updateProfile, isGuestMode = false, onLogi
       >
         {messages.map((m, idx) => {
           const isLastMessage = idx === messages.length - 1;
-          const showDiagnosticOptions = isLastMessage && m.role === 'assistant' && currentStepInfo && chatState.startsWith('DIAGNOSTIC_');
-          const showConsentOptions = isLastMessage && m.role === 'assistant' && chatState === 'CONSENT';
-          const showIntroOptions = false; // Always hide intro options in free chat mode
+          // All diagnostic/consent UI disabled - always in free chat mode
+          const showDiagnosticOptions = false;
+          const showConsentOptions = false;
+          const showIntroOptions = false;
 
           return (
             <div 
@@ -244,34 +236,7 @@ export function ChatWindow({ profile, updateProfile, isGuestMode = false, onLogi
                       </Button>
                     ))}
 
-                    {isLastMessage && chatState === 'SUMMARY' && (
-                      <div className="w-full space-y-4 pt-4">
-                        <div className="p-4 bg-primary/5 border border-primary/20 rounded-2xl space-y-3">
-                          <h4 className="font-bold text-xs uppercase tracking-widest text-primary flex items-center gap-2">
-                            <ShieldCheck className="h-4 w-4" />
-                            Первые шаги
-                          </h4>
-                          <div className="space-y-2">
-                             <Button className="w-full justify-start gap-2 h-11 px-4 rounded-xl font-bold bg-primary shadow-lg shadow-primary/20">
-                               <CheckCircle2 className="h-4 w-4" />
-                               Улучшение кредитной истории
-                             </Button>
-                             <Button variant="outline" className="w-full justify-start gap-2 h-11 px-4 rounded-xl font-bold border-primary text-primary">
-                               <CheckCircle2 className="h-4 w-4" />
-                               План выхода из долгов
-                             </Button>
-                          </div>
-                        </div>
-                        <div className="p-4 bg-secondary/50 rounded-2xl border border-dashed border-muted-foreground/30 text-center space-y-3">
-                           <p className="text-xs font-medium text-muted-foreground leading-relaxed">
-                             Для точного профессионального разбора нужна кредитная история (КИ).
-                           </p>
-                           <Button disabled variant="secondary" className="w-full h-10 text-xs font-bold uppercase tracking-widest opacity-50 cursor-not-allowed">
-                             Глубокий анализ КИ (демо)
-                           </Button>
-                        </div>
-                      </div>
-                    )}
+                    {/* Summary UI disabled - always in free chat mode */}
                   </div>
                 )}
               </div>

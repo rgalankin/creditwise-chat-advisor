@@ -172,5 +172,3 @@ export function ChatDashboard({ isGuestMode = false, onLogin, onReturnToHome }: 
     </div>
   );
 }
-
-import { blink } from '../lib/blink';

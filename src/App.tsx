@@ -27,11 +27,11 @@ export default function App() {
   }, [isLoading, isAuthenticated, isGuestMode]);
 
   const handleStartDiagnostic = () => {
-    // Start guest session - store minimal data
+    // Start guest session - store minimal data (direct to CHAT mode, no diagnostic flow)
     sessionStorage.setItem(GUEST_SESSION_KEY, JSON.stringify({
       startedAt: new Date().toISOString(),
       messages: [],
-      chatState: 'INTRO',
+      chatState: 'CHAT',
       diagnosticData: {}
     }));
     setIsGuestMode(true);

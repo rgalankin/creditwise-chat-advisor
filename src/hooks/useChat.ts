@@ -46,15 +46,9 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
     });
   }, []);
 
-  const getInitialMessage = useCallback((state: ChatState) => {
-    switch (state) {
-      case 'INTRO':
-        return "Здравствуйте! Я ваш Советник CreditWise. Я здесь, чтобы помочь вам управлять вашим финансовым положением с полной автономией в соответствии с законодательством Российской Федерации.";
-      case 'CONSENT':
-        return "Чтобы продолжить, необходимо согласие на обработку данных. Информация используется только для подготовки рекомендаций.";
-      default:
-        return "";
-    }
+  const getInitialMessage = useCallback(() => {
+    // Universal greeting for CHAT mode - no diagnostic flow
+    return "Здравствуйте! Я ваш финансовый советник. Задайте любой вопрос о кредитах, долгах, рефинансировании или банкротстве — я помогу разобраться в вашей ситуации.";
   }, []);
 
   const initSession = useCallback(async () => {
@@ -69,35 +63,37 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
       if (guestSession) {
         const data = JSON.parse(guestSession);
         setMessages(data.messages || []);
-        setChatState(data.chatState || 'INTRO');
+        // Always use CHAT mode - bypass diagnostic FSM
+        setChatState('CHAT');
         setDiagnosticData(data.diagnosticData || {});
         
         if (!data.messages || data.messages.length === 0) {
           const greeting = {
             id: `msg_guest_${Date.now()}`,
             role: 'assistant',
-            content: getInitialMessage('INTRO'),
+            content: getInitialMessage(),
             createdAt: new Date().toISOString()
           };
           setMessages([greeting]);
           sessionStorage.setItem(GUEST_SESSION_KEY, JSON.stringify({
             ...data,
-            messages: [greeting]
+            messages: [greeting],
+            chatState: 'CHAT'
           }));
         }
       } else {
-        // Initialize new guest session with greeting
+        // Initialize new guest session with greeting - direct to CHAT mode
         const greeting = {
           id: `msg_guest_${Date.now()}`,
           role: 'assistant',
-          content: getInitialMessage('INTRO'),
+          content: getInitialMessage(),
           createdAt: new Date().toISOString()
         };
         setMessages([greeting]);
-        setChatState('INTRO');
+        setChatState('CHAT');
         sessionStorage.setItem(GUEST_SESSION_KEY, JSON.stringify({
           messages: [greeting],
-          chatState: 'INTRO',
+          chatState: 'CHAT',
           diagnosticData: {}
         }));
       }
@@ -122,19 +118,19 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
       if (!activeSession) {
         activeSession = await (blink.db as any).chatSessions.create({
           userId: profile?.userId,
-          title: 'Первичная диагностика'
+          title: 'Финансовый советник'
         });
         
         const greeting = {
           sessionId: activeSession.id,
           userId: profile?.userId,
           role: 'assistant',
-          content: getInitialMessage('INTRO'),
-          metadata: JSON.stringify({ state: 'INTRO' })
+          content: getInitialMessage(),
+          metadata: JSON.stringify({ state: 'CHAT' })
         };
         const createdMsg = await (blink.db as any).chatMessages.create(greeting);
         setMessages([createdMsg]);
-        setChatState('INTRO');
+        setChatState('CHAT');
       } else {
         const msgs = await (blink.db as any).chatMessages.list({
           where: { sessionId: activeSession.id },
@@ -142,13 +138,14 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
         });
         setMessages(msgs);
         
-        // Restore state from last message or session
+        // Always use CHAT mode - bypass diagnostic FSM
+        // Restore only diagnosticData if available
         const lastMsg = msgs[msgs.length - 1];
         if (lastMsg?.metadata) {
           const meta = JSON.parse(lastMsg.metadata);
-          if (meta.state) setChatState(meta.state);
           if (meta.diagnosticData) setDiagnosticData(meta.diagnosticData);
         }
+        setChatState('CHAT');
       }
       setSession(activeSession);
     } catch (error) {

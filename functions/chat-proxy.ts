@@ -71,7 +71,18 @@ async function callN8n(
     throw new Error(`n8n error: ${response.status} - ${text}`);
   }
 
-  return response.json();
+  const jsonData = await response.json();
+  
+  // FIX: n8n returns array with single element, extract the object
+  if (Array.isArray(jsonData)) {
+    console.log(`[chat-proxy] n8n returned array with ${jsonData.length} elements, extracting first element`);
+    if (jsonData.length === 0) {
+      throw new Error("n8n returned empty array");
+    }
+    return jsonData[0];
+  }
+  
+  return jsonData;
 }
 
 // =============================================================================
@@ -172,15 +183,71 @@ async function handler(req: Request): Promise<Response> {
     if (!n8nUrl) {
       console.log(`[chat-proxy] Fallback mode for endpoint: ${targetEndpoint}`);
 
-      // В fallback режиме возвращаем базовый ответ
-      // Вся логика остаётся на фронте (в useChat)
+      // В fallback режиме используем Blink AI для сообщений
+      if (targetEndpoint === "message" && data.content) {
+        console.log(`[chat-proxy] Generating AI response for message: ${data.content.substring(0, 50)}...`);
+        
+        try {
+          const systemPrompt = `You are the Credo-Service Advisor — a professional, unbiased financial advisor.
+          
+Your responsibilities:
+- Help users understand their credit and financial situation
+- Provide clear, practical advice about loans, debt management, refinancing, and bankruptcy
+- Be supportive and non-judgmental
+- Respond in the same language as the user's message (Russian or English)
+- Do NOT guarantee loan approvals or make promises about specific outcomes
+- Recommend consulting with licensed professionals for legal or tax matters
+
+User's language: ${data.language || 'ru'}`;
+
+          // Build messages array from context
+          const messages = [
+            { role: 'system' as const, content: systemPrompt },
+            { role: 'user' as const, content: data.content }
+          ];
+
+          const { text } = await blink.ai.generateText({
+            messages,
+            maxTokens: 1000
+          });
+
+          const response = {
+            text: text,
+            state: "CHAT",
+            sessionId: data.sessionId || `fallback_${Date.now()}`,
+            ui: [],
+            meta: {
+              event: { type: "message_processed", fallback: true }
+            }
+          };
+
+          console.log(`[chat-proxy] AI response generated successfully`);
+          return jsonResponse(response);
+        } catch (aiError) {
+          console.error(`[chat-proxy] AI generation failed:`, aiError);
+          // Return a user-friendly error response
+          const fallbackResponse = {
+            text: "Прошу прощения, возникла временная ошибка при обработке запроса. Пожалуйста, попробуйте еще раз через несколько секунд.",
+            state: "CHAT",
+            sessionId: data.sessionId || `fallback_${Date.now()}`,
+            ui: [],
+            meta: {
+              event: { type: "ai_error", fallback: true },
+              error: aiError instanceof Error ? aiError.message : "Unknown error"
+            }
+          };
+          return jsonResponse(fallbackResponse);
+        }
+      }
+
+      // Default fallback for non-message endpoints or when message content is missing
       const fallbackResponse = {
-        text: "Hello! How can I assist you today?",
+        text: "Здравствуйте! Я ваш финансовый советник. Задайте любой вопрос о кредитах, долгах, рефинансировании или банкротстве.",
         state: "CHAT",
-        sessionId: data.sessionId || `fallback_${Date.now()}`, // Return provided sessionId if available
+        sessionId: data.sessionId || `fallback_${Date.now()}`,
         ui: [],
         meta: {
-          event: { type: "message_processed" }
+          event: { type: "fallback_mode" }
         }
       };
 

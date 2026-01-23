@@ -134,7 +134,8 @@ export function ChatWindow({ profile, updateProfile, isGuestMode = false, onLogi
         </div>
       </header>
 
-      {/* Progress Bar hidden for free chat mode */}
+      {/* Progress Bar removed for free chat mode */}
+      {/* Keeping empty div for layout consistency if needed, but it's hidden */}
       <div className="hidden px-6 py-3 bg-secondary/30 border-b">
         <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">
           <span>Прогресс анализа</span>
@@ -150,6 +151,7 @@ export function ChatWindow({ profile, updateProfile, isGuestMode = false, onLogi
         {messages.map((m, idx) => {
           const isLastMessage = idx === messages.length - 1;
           // All diagnostic/consent UI disabled - always in free chat mode
+          // Removed unused option booleans and related logic to clean up the UI
           const showDiagnosticOptions = false;
           const showConsentOptions = false;
           const showIntroOptions = false;
@@ -191,54 +193,7 @@ export function ChatWindow({ profile, updateProfile, isGuestMode = false, onLogi
                   </ReactMarkdown>
                 </div>
                 
-                {/* Options Chips */}
-                {m.role === 'assistant' && (
-                  <div className="flex flex-wrap gap-2">
-                    {showIntroOptions && (
-                      <Button 
-                        size="sm" 
-                        onClick={() => handleSend('Начать диагностику')}
-                        className="rounded-full px-4 font-bold h-9"
-                      >
-                        Начать диагностику
-                      </Button>
-                    )}
-                    
-                    {showConsentOptions && (
-                      <>
-                        <Button 
-                          size="sm" 
-                          onClick={() => handleSend('Предоставить согласие')}
-                          className="rounded-full px-4 font-bold h-9"
-                        >
-                          Предоставить согласие
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => setLocalInput('')}
-                          className="rounded-full px-4 font-bold h-9"
-                        >
-                          Отмена
-                        </Button>
-                      </>
-                    )}
-
-                    {showDiagnosticOptions && currentStepInfo.options.map((opt: string) => (
-                      <Button
-                        key={opt}
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleSend(opt)}
-                        className="rounded-full px-4 hover:bg-primary/5 hover:border-primary/30 transition-all font-medium h-9"
-                      >
-                        {opt}
-                      </Button>
-                    ))}
-
-                    {/* Summary UI disabled - always in free chat mode */}
-                  </div>
-                )}
+                {/* Options Chips disabled for free chat mode */}
               </div>
             </div>
           );

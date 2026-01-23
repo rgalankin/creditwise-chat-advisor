@@ -408,12 +408,12 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
       return;
     }
 
-    // FSM Logic for guests - Default to CHAT if no diagnostic is ongoing
+    // FSM Logic for guests - Default to CHAT mode to bypass diagnostic flow
     let nextState: ChatState = chatState;
     let responseText = '';
     let updatedDiagData = diagnosticData;
 
-    // Only process diagnostic steps if we are explicitly in them
+    // Only process diagnostic steps if we are explicitly in them (legacy support)
     if (chatState.startsWith('DIAGNOSTIC_')) {
       const currentStep = parseInt(chatState.split('_')[1]);
       const nextStep = currentStep + 1;
@@ -427,8 +427,8 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
         nextState = 'SUMMARY';
         responseText = `Диагностика завершена! Вот краткий анализ вашей ситуации:\n\n**Ваши ответы:**\n${Object.entries(updatedDiagData).map(([k, v]) => `• ${k}: ${v}`).join('\n')}\n\n**Рекомендации:**\n1. Рассмотрите варианты рефинансирования\n2. Проверьте свою кредитную историю\n3. Составьте план погашения долгов\n\nДля более детального анализа зарегистрируйтесь в системе.`;
       }
-    } else if (chatState === 'INTRO' || chatState === 'CONSENT' || chatState === 'CHAT') {
-      // Direct AI streaming fallback if n8n is unavailable or in non-diagnostic states
+    } else {
+      // Direct AI streaming fallback - Standard mode
       setIsLoading(true);
       try {
         const systemPrompt = `You are the Credo-Service Advisor.
@@ -489,13 +489,6 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
       } finally {
         setIsLoading(false);
       }
-    } else if (chatState === 'SUMMARY') {
-      // После summary - переход в свободный чат
-      responseText = "Спасибо за ваш вопрос! Для получения более подробных рекомендаций зарегистрируйтесь в системе.\n\nМогу порекомендовать:\n• Проверить свою кредитную историю\n• Рассмотреть варианты рефинансирования\n• Составить план погашения долгов";
-      nextState = 'SUMMARY';
-    } else {
-      // Free chat - simple response for guests
-      responseText = "Для получения персонализированных рекомендаций, пожалуйста, завершите диагностику или зарегистрируйтесь в системе.";
     }
 
     const botMsg = {
@@ -590,7 +583,8 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
       return;
     }
 
-    // FSM Logic - Only process diagnostic if explicitly in those states
+    // FSM Logic - Default to CHAT mode to bypass diagnostic flow
+    // Only process diagnostic steps if we are explicitly in them (legacy support)
     if (chatState.startsWith('DIAGNOSTIC_')) {
       const currentStep = parseInt(chatState.split('_')[1]);
       const nextStep = currentStep + 1;
@@ -626,8 +620,8 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
           setIsLoading(false);
         }
       }
-    } else if (chatState === 'INTRO' || chatState === 'CONSENT' || chatState === 'CHAT') {
-      // Free chat or AI response for free conversational mode
+    } else {
+      // Free chat or AI response - Standard mode
       if (!isGuestMode) {
         const hasCredit = await useCredit();
         if (!hasCredit) return;
@@ -665,50 +659,6 @@ export function useChat(profile: any, updateProfile: (data: any) => Promise<any>
 
         setMessages(prev => prev.map(m => m.id === botMsgId ? finalBotMsg : m));
         setChatState('CHAT');
-      } catch (error) {
-        console.error('Chat error:', error);
-        toast.error('Connection issue.');
-      } finally {
-        setIsLoading(false);
-      }
-    } else {
-      // Free chat or AI response
-      if (!isGuestMode) {
-        const hasCredit = await useCredit();
-        if (!hasCredit) return;
-      }
-
-      setIsLoading(true);
-      try {
-        const systemPrompt = `You are the Credo-Service Advisor.
-        User Context: ${profile?.jurisdiction || 'Unknown'}, Financial Data: ${JSON.stringify(diagnosticData)}.
-        Respond as a professional, unbiased advisor.`;
-
-        let fullResponse = '';
-        const botMsgId = `msg_a_${Date.now()}`;
-        
-        setMessages(prev => [...prev, { id: botMsgId, role: 'assistant', content: '', isStreaming: true }]);
-
-        await blink.ai.streamText({
-          messages: [
-            { role: 'system', content: systemPrompt },
-            ...messages.map(m => ({ role: m.role, content: m.content })),
-            { role: 'user', content }
-          ]
-        }, (chunk) => {
-          fullResponse += chunk;
-          setMessages(prev => prev.map(m => m.id === botMsgId ? { ...m, content: fullResponse } : m));
-        });
-
-        const finalBotMsg = await (blink.db as any).chatMessages.create({
-          sessionId: session.id,
-          userId: profile?.userId,
-          role: 'assistant',
-          content: fullResponse,
-          metadata: JSON.stringify({ state: chatState, diagnosticData })
-        });
-
-        setMessages(prev => prev.map(m => m.id === botMsgId ? finalBotMsg : m));
       } catch (error) {
         console.error('Chat error:', error);
         toast.error('Connection issue.');
